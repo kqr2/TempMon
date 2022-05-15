@@ -23,6 +23,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
+#include "../Console/console.h"
+
 
 /* USER CODE END Includes */
 
@@ -127,8 +130,20 @@ int main(void)
   MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
 
+  // https://embedded.fm/blog/2017/1/19/discovery-uart-input
+  // Disable buffering of serial ports
+  setvbuf(stdin, NULL, _IONBF, 0);
+  setvbuf(stdout, NULL, _IONBF, 0);
+
+  // Initialize command console
+  ConsoleInit();
+
   /* USER CODE END 2 */
 
+  // https://embedded.fm/blog/2017/1/19/discovery-uart-input
+  // Disable buffering of serial ports
+  setvbuf(stdin, NULL, _IONBF, 0);
+  setvbuf(stdout, NULL, _IONBF, 0);
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
@@ -137,6 +152,8 @@ int main(void)
     MX_USB_HOST_Process();
 
     /* USER CODE BEGIN 3 */
+    ConsoleProcess();
+    HAL_Delay(2);
   }
   /* USER CODE END 3 */
 }

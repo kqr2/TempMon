@@ -30,11 +30,26 @@
 #include <sys/time.h>
 #include <sys/times.h>
 
+#include "stm32f4xx_hal.h"
+
 
 /* Variables */
 extern int __io_putchar(int ch) __attribute__((weak));
 extern int __io_getchar(void) __attribute__((weak));
 
+
+extern UART_HandleTypeDef huart1;
+
+int __io_putchar(int ch)
+{
+    return (HAL_UART_Transmit(&huart1 , (uint8_t *)&ch, 1, 0xFFFF) == HAL_OK ? ch : EOF);
+}
+
+int __io_getchar(void)
+{
+	uint8_t ch;
+	return (HAL_UART_Receive(&huart1, (uint8_t *)&ch, 1, 0xFFFF) == HAL_OK ? ch : EOF);
+}
 
 char *__env[1] = { 0 };
 char **environ = __env;
