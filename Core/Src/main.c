@@ -18,12 +18,13 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "fatfs.h"
+//#include "fatfs.h"
 #include "usb_host.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include "stm32f429i_discovery_lcd.h"
 #include "../Console/console.h"
 
 
@@ -127,7 +128,7 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USB_HOST_Init();
   MX_ADC1_Init();
-  MX_FATFS_Init();
+  //MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
 
   // https://embedded.fm/blog/2017/1/19/discovery-uart-input
