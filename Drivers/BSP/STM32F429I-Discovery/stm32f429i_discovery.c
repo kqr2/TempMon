@@ -441,6 +441,39 @@ static void I2Cx_ITConfig(void)
   HAL_NVIC_EnableIRQ((IRQn_Type)(STMPE811_INT_EXTI));
 }
 
+
+static HAL_StatusTypeDef I2Cx_Master_Transmit(uint8_t Addr, uint8_t *pData, uint16_t Size)
+{
+  HAL_StatusTypeDef status = HAL_OK;
+  
+  status = HAL_I2C_Master_Transmit(&I2cHandle, Addr, pData, Size, I2cxTimeout);
+ 
+  /* Check the communication status */
+  if(status != HAL_OK)
+  {
+    /* Re-Initialize the BUS */
+    I2Cx_Error();
+  
+  }
+  return status;
+}
+
+static HAL_StatusTypeDef I2Cx_Master_Receive(uint8_t Addr, uint8_t *pData, uint16_t Size)
+{
+  HAL_StatusTypeDef status = HAL_OK;
+  
+  status = HAL_I2C_Master_Receive(&I2cHandle, Addr, pData, Size, I2cxTimeout);
+ 
+  /* Check the communication status */
+  if(status != HAL_OK)
+  {
+    /* Re-Initialize the BUS */
+    I2Cx_Error();
+  
+  }
+  return status;
+}
+
 /**
   * @brief  Writes a value in a register of the device through BUS.
   * @param  Addr: Device address on BUS Bus.  
@@ -532,6 +565,28 @@ static uint8_t I2Cx_ReadBuffer(uint8_t Addr, uint8_t Reg, uint8_t *pBuffer, uint
     return 1;
   }
 }
+
+
+uint16_t BSP_TempSensors_ReadReg16(uint8_t Addr, uint8_t Reg) {
+  uint8_t buf[2];
+  buf[0] = Reg;
+  I2Cx_Master_Transmit(Addr, buf, 1);
+  I2Cx_Master_Receive(Addr, buf, 2);
+  return (((uint16_t)buf[0]) << 8) |  buf[1];
+}
+
+uint16_t BSP_TempSensors_Read_Temp(uint8_t Addr) {
+  return BSP_TempSensors_ReadReg16(Addr, 0) >> 4;
+}
+
+
+void BSP_TempSensors_Init(void) {
+  I2Cx_Init();
+}
+
+
+
+
 
 #ifdef EE_M24LR64
 /**

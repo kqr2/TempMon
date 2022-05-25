@@ -24,6 +24,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include "stm32f429i_discovery.h"
 #include "stm32f429i_discovery_lcd.h"
 #include "../Console/console.h"
 
@@ -170,8 +171,24 @@ int main(void)
   BSP_LCD_SetTextColor(LCD_COLOR_DARKGRAY);
   BSP_LCD_SetFont(&Font16);
 
-  BSP_LCD_DisplayStringAtLine(1, (uint8_t *)"ABCD");
-  BSP_LCD_DisplayStringAtLine(2, (uint8_t *)"EFGH");
+  BSP_TempSensors_Init();
+
+  uint8_t addr;
+  uint32_t temp;
+  uint8_t temp_buf[32];
+
+  addr = 0x48 << 1;
+  temp = BSP_TempSensors_Read_Temp(addr);
+  temp *= 625;
+  sprintf(temp_buf, "Temp 0x%02x : %u.%u", addr, temp/10000, temp % 10000);
+  BSP_LCD_DisplayStringAtLine(1, temp_buf);
+
+  addr = 0x4B << 1;
+  temp = BSP_TempSensors_Read_Temp(addr);
+  temp *= 625;
+  sprintf(temp_buf, "Temp 0x%02x : %u.%u", addr, temp/10000, temp % 10000);
+  BSP_LCD_DisplayStringAtLine(2, temp_buf);
+
   BSP_LCD_DisplayStringAtLine(3, (uint8_t *)"IJKL");
 
   /* USER CODE END 2 */
