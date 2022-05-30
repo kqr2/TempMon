@@ -314,6 +314,10 @@ uint32_t BSP_PB_GetState(Button_TypeDef Button);
 void I2Cx_Init(void);
 HAL_StatusTypeDef I2Cx_Master_Transmit(uint8_t Addr, uint8_t *pData, uint16_t Size);
 HAL_StatusTypeDef I2Cx_Master_Receive(uint8_t Addr, uint8_t *pData, uint16_t Size);
+void I2Cx_WriteData(uint8_t Addr, uint8_t Reg, uint8_t Value);
+void I2Cx_WriteBuffer(uint8_t Addr, uint8_t Reg,  uint8_t *pBuffer, uint16_t Length);
+uint8_t I2Cx_ReadData(uint8_t Addr, uint8_t Reg);
+uint8_t I2Cx_ReadBuffer(uint8_t Addr, uint8_t Reg, uint8_t *pBuffer, uint16_t Length);
 
 /**
   * @}

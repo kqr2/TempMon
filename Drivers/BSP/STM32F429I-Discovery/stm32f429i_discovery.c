@@ -96,10 +96,6 @@ static uint8_t Is_LCD_IO_Initialized = 0;
   */ 
 /* I2Cx bus function */
 static void               I2Cx_ITConfig(void);
-static void               I2Cx_WriteData(uint8_t Addr, uint8_t Reg, uint8_t Value);
-static void               I2Cx_WriteBuffer(uint8_t Addr, uint8_t Reg,  uint8_t *pBuffer, uint16_t Length);
-static uint8_t            I2Cx_ReadData(uint8_t Addr, uint8_t Reg);
-static uint8_t            I2Cx_ReadBuffer(uint8_t Addr, uint8_t Reg, uint8_t *pBuffer, uint16_t Length);
 static void               I2Cx_Error(void);
 static void               I2Cx_MspInit(I2C_HandleTypeDef *hi2c);  
 #ifdef EE_M24LR64
@@ -479,7 +475,7 @@ HAL_StatusTypeDef I2Cx_Master_Receive(uint8_t Addr, uint8_t *pData, uint16_t Siz
   * @param  Reg: The target register address to write
   * @param  Value: The target register value to be written 
   */
-static void I2Cx_WriteData(uint8_t Addr, uint8_t Reg, uint8_t Value)
+void I2Cx_WriteData(uint8_t Addr, uint8_t Reg, uint8_t Value)
   {
   HAL_StatusTypeDef status = HAL_OK;
   
@@ -500,7 +496,7 @@ static void I2Cx_WriteData(uint8_t Addr, uint8_t Reg, uint8_t Value)
   * @param  pBuffer: The target register value to be written 
   * @param  Length: buffer size to be written
   */
-static void I2Cx_WriteBuffer(uint8_t Addr, uint8_t Reg,  uint8_t *pBuffer, uint16_t Length)
+void I2Cx_WriteBuffer(uint8_t Addr, uint8_t Reg,  uint8_t *pBuffer, uint16_t Length)
   {
   HAL_StatusTypeDef status = HAL_OK;
   
@@ -520,7 +516,7 @@ static void I2Cx_WriteBuffer(uint8_t Addr, uint8_t Reg,  uint8_t *pBuffer, uint1
   * @param  Reg: The target register address to write
   * @retval Data read at register address
   */
-static uint8_t I2Cx_ReadData(uint8_t Addr, uint8_t Reg)
+uint8_t I2Cx_ReadData(uint8_t Addr, uint8_t Reg)
 {
   HAL_StatusTypeDef status = HAL_OK;
   uint8_t value = 0;
@@ -545,7 +541,7 @@ static uint8_t I2Cx_ReadData(uint8_t Addr, uint8_t Reg)
   * @param  Length: length of the data
   * @retval 0 if no problems to read multiple data
   */
-static uint8_t I2Cx_ReadBuffer(uint8_t Addr, uint8_t Reg, uint8_t *pBuffer, uint16_t Length)
+uint8_t I2Cx_ReadBuffer(uint8_t Addr, uint8_t Reg, uint8_t *pBuffer, uint16_t Length)
 {
   HAL_StatusTypeDef status = HAL_OK;
 
