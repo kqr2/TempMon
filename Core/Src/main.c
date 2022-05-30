@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include "stm32f429i_discovery.h"
 #include "stm32f429i_discovery_lcd.h"
+#include "sys_tmp102.h"
 #include "../Console/console.h"
 
 
@@ -170,7 +171,7 @@ int main(void)
   BSP_LCD_SetTextColor(LCD_COLOR_DARKGRAY);
   BSP_LCD_SetFont(&Font16);
 
-  BSP_TempSensors_Init();
+  sys_tmp102_init();
 
   uint8_t addr;
   uint32_t temp;
@@ -196,7 +197,7 @@ int main(void)
     ConsoleProcess();
 
     if (i++ % 500 == 0) {
-      sprintf(temp_buf, "Itr: %u", j++);
+      sprintf(temp_buf, "Iteration: %u", j++);
       BSP_LCD_DisplayStringAtLine(1, temp_buf);
       if (Appli_state == APPLICATION_READY && opened) {
 	res = f_write(&USBHFile, temp_buf, strlen(temp_buf), (void *)&byteswritten);
@@ -204,7 +205,7 @@ int main(void)
       }
       
       addr = 0x48 << 1;
-      temp = BSP_TempSensors_Read_Temp(addr);
+      temp = sys_tmp102_read_temp(addr);
       temp *= 625;
       sprintf(temp_buf, "Temp 0x%02x : %u.%u", addr, temp/10000, temp % 10000);
       BSP_LCD_DisplayStringAtLine(2, temp_buf);
@@ -215,7 +216,7 @@ int main(void)
 
 
       addr = 0x4B << 1;
-      temp = BSP_TempSensors_Read_Temp(addr);
+      temp = sys_tmp102_read_temp(addr);
       temp *= 625;
       sprintf(temp_buf, "Temp 0x%02x : %u.%u", addr, temp/10000, temp % 10000);
       BSP_LCD_DisplayStringAtLine(3, temp_buf);

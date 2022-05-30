@@ -95,7 +95,6 @@ static uint8_t Is_LCD_IO_Initialized = 0;
   * @{
   */ 
 /* I2Cx bus function */
-static void               I2Cx_Init(void);
 static void               I2Cx_ITConfig(void);
 static void               I2Cx_WriteData(uint8_t Addr, uint8_t Reg, uint8_t Value);
 static void               I2Cx_WriteBuffer(uint8_t Addr, uint8_t Reg,  uint8_t *pBuffer, uint16_t Length);
@@ -400,7 +399,7 @@ static void I2Cx_MspInit(I2C_HandleTypeDef *hi2c)
 /**
   * @brief  I2Cx Bus initialization.
   */
-static void I2Cx_Init(void)
+void I2Cx_Init(void)
 {
   if(HAL_I2C_GetState(&I2cHandle) == HAL_I2C_STATE_RESET)
   {
@@ -442,7 +441,7 @@ static void I2Cx_ITConfig(void)
 }
 
 
-static HAL_StatusTypeDef I2Cx_Master_Transmit(uint8_t Addr, uint8_t *pData, uint16_t Size)
+HAL_StatusTypeDef I2Cx_Master_Transmit(uint8_t Addr, uint8_t *pData, uint16_t Size)
 {
   HAL_StatusTypeDef status = HAL_OK;
   
@@ -458,7 +457,7 @@ static HAL_StatusTypeDef I2Cx_Master_Transmit(uint8_t Addr, uint8_t *pData, uint
   return status;
 }
 
-static HAL_StatusTypeDef I2Cx_Master_Receive(uint8_t Addr, uint8_t *pData, uint16_t Size)
+HAL_StatusTypeDef I2Cx_Master_Receive(uint8_t Addr, uint8_t *pData, uint16_t Size)
 {
   HAL_StatusTypeDef status = HAL_OK;
   
@@ -565,27 +564,6 @@ static uint8_t I2Cx_ReadBuffer(uint8_t Addr, uint8_t Reg, uint8_t *pBuffer, uint
     return 1;
   }
 }
-
-
-uint16_t BSP_TempSensors_ReadReg16(uint8_t Addr, uint8_t Reg) {
-  uint8_t buf[2];
-  buf[0] = Reg;
-  I2Cx_Master_Transmit(Addr, buf, 1);
-  I2Cx_Master_Receive(Addr, buf, 2);
-  return (((uint16_t)buf[0]) << 8) |  buf[1];
-}
-
-uint16_t BSP_TempSensors_Read_Temp(uint8_t Addr) {
-  return BSP_TempSensors_ReadReg16(Addr, 0) >> 4;
-}
-
-
-void BSP_TempSensors_Init(void) {
-  I2Cx_Init();
-}
-
-
-
 
 
 #ifdef EE_M24LR64

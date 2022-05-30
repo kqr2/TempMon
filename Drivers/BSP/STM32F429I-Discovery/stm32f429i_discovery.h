@@ -310,8 +310,10 @@ void     BSP_LED_Toggle(Led_TypeDef Led);
 void     BSP_PB_Init(Button_TypeDef Button, ButtonMode_TypeDef ButtonMode);
 uint32_t BSP_PB_GetState(Button_TypeDef Button);
 
-void BSP_TempSensors_Init(void);
-uint16_t BSP_TempSensors_Read_Temp(uint8_t Addr);
+
+void I2Cx_Init(void);
+HAL_StatusTypeDef I2Cx_Master_Transmit(uint8_t Addr, uint8_t *pData, uint16_t Size);
+HAL_StatusTypeDef I2Cx_Master_Receive(uint8_t Addr, uint8_t *pData, uint16_t Size);
 
 /**
   * @}
