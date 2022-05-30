@@ -60,6 +60,8 @@ typedef enum {
   APPLICATION_DISCONNECT
 }ApplicationTypeDef;
 
+extern ApplicationTypeDef Appli_state;
+
 /** @defgroup USBH_HOST_Exported_FunctionsPrototype USBH_HOST_Exported_FunctionsPrototype
   * @brief Declaration of public functions for Usb host.
   * @{

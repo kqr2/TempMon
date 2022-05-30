@@ -18,10 +18,10 @@
 /* USER CODE END Header */
 #include "fatfs.h"
 
-uint8_t retSDRAMDISK;    /* Return value for SDRAMDISK */
-char SDRAMDISKPath[4];   /* SDRAMDISK logical drive path */
-FATFS SDRAMDISKFatFS;    /* File system object for SDRAMDISK logical drive */
-FIL SDRAMDISKFile;       /* File object for SDRAMDISK */
+uint8_t retUSBH;    /* Return value for USBH */
+char USBHPath[4];   /* USBH logical drive path */
+FATFS USBHFatFS;    /* File system object for USBH logical drive */
+FIL USBHFile;       /* File object for USBH */
 
 /* USER CODE BEGIN Variables */
 
@@ -29,8 +29,8 @@ FIL SDRAMDISKFile;       /* File object for SDRAMDISK */
 
 void MX_FATFS_Init(void)
 {
-  /*## FatFS: Link the SDRAMDISK driver ###########################*/
-  retSDRAMDISK = FATFS_LinkDriver(&SDRAMDISK_Driver, SDRAMDISKPath);
+  /*## FatFS: Link the USBH driver ###########################*/
+  retUSBH = FATFS_LinkDriver(&USBH_Driver, USBHPath);
 
   /* USER CODE BEGIN Init */
   /* additional user code for init */
@@ -50,5 +50,76 @@ DWORD get_fattime(void)
 }
 
 /* USER CODE BEGIN Application */
+void FatFS_test_routine(void)
+{
+	FRESULT res;
+	uint32_t byteswritten;
+
+	char wtext[100] = "This line has been written by an STM32 device!\n";
+
+	if(f_mount(&USBHFatFS, (TCHAR const*) USBHPath, 0) == FR_OK)
+	{
+		res = f_open(&USBHFile, "STM32.TXT", FA_CREATE_ALWAYS | FA_WRITE);
+
+		if (res != FR_OK)
+		{
+			return;
+		}
+
+		res = f_write(&USBHFile, wtext, strlen(wtext), (void *)&byteswritten);
+
+		if (res != FR_OK)
+		{
+			return;
+		}
+
+		res = f_sync(&USBHFile);
+
+		if (res != FR_OK)
+		{
+			return;
+		}
+
+		res = f_close(&USBHFile);
+
+		if (res != FR_OK)
+		{
+			return;
+		}
+	}
+}
+
+void FatFS_close(void) {
+  FRESULT res;
+  res = f_sync(&USBHFile);
+
+  if (res != FR_OK)
+    {
+      return;
+    }
+
+  res = f_close(&USBHFile);
+
+  if (res != FR_OK)
+    {
+      return;
+    }
+}
+
+void FatFS_open(void)
+{
+  FRESULT res;
+
+  if(f_mount(&USBHFatFS, (TCHAR const*) USBHPath, 0) == FR_OK)
+    {
+      res = f_open(&USBHFile, "STM32.TXT", FA_CREATE_ALWAYS | FA_WRITE);
+
+      if (res != FR_OK)
+	{
+	  return;
+	}
+    }
+}
+
 
 /* USER CODE END Application */

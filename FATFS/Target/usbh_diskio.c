@@ -1,8 +1,8 @@
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
-  * @file    sdram_diskio.c (based on sdram_diskio_template.c v2.0.2)
-  * @brief   SDRAM Disk I/O driver
+  * @file    usbh_diskio.c (based on usbh_diskio_template.c v2.0.2)
+  * @brief   USB Host Disk I/O driver
   ******************************************************************************
   * @attention
   *
@@ -22,38 +22,39 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "ff_gen_drv.h"
-#include "sdram_diskio.h"
+#include "usbh_diskio.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-/* Block Size in Bytes */
-#define BLOCK_SIZE                512
+
+#define USB_DEFAULT_BLOCK_SIZE 512
 
 /* Private variables ---------------------------------------------------------*/
-/* Disk status */
-static volatile DSTATUS Stat = STA_NOINIT;
+extern USBH_HandleTypeDef  hUSB_Host;
 
 /* Private function prototypes -----------------------------------------------*/
-DSTATUS SDRAMDISK_initialize (BYTE);
-DSTATUS SDRAMDISK_status (BYTE);
-DRESULT SDRAMDISK_read (BYTE, BYTE*, DWORD, UINT);
+DSTATUS USBH_initialize (BYTE);
+DSTATUS USBH_status (BYTE);
+DRESULT USBH_read (BYTE, BYTE*, DWORD, UINT);
+
 #if _USE_WRITE == 1
-  DRESULT SDRAMDISK_write (BYTE, const BYTE*, DWORD, UINT);
+  DRESULT USBH_write (BYTE, const BYTE*, DWORD, UINT);
 #endif /* _USE_WRITE == 1 */
+
 #if _USE_IOCTL == 1
-  DRESULT SDRAMDISK_ioctl (BYTE, BYTE, void*);
+  DRESULT USBH_ioctl (BYTE, BYTE, void*);
 #endif /* _USE_IOCTL == 1 */
 
-const Diskio_drvTypeDef  SDRAMDISK_Driver =
+const Diskio_drvTypeDef  USBH_Driver =
 {
-  SDRAMDISK_initialize,
-  SDRAMDISK_status,
-  SDRAMDISK_read,
-#if  _USE_WRITE
-  SDRAMDISK_write,
-#endif  /* _USE_WRITE == 1 */
+  USBH_initialize,
+  USBH_status,
+  USBH_read,
+#if  _USE_WRITE == 1
+  USBH_write,
+#endif /* _USE_WRITE == 1 */
 #if  _USE_IOCTL == 1
-  SDRAMDISK_ioctl,
+  USBH_ioctl,
 #endif /* _USE_IOCTL == 1 */
 };
 
@@ -65,30 +66,35 @@ const Diskio_drvTypeDef  SDRAMDISK_Driver =
 
 /**
   * @brief  Initializes a Drive
-  * @param  lun : not used
+  * @param  lun : lun id
   * @retval DSTATUS: Operation status
   */
-DSTATUS SDRAMDISK_initialize(BYTE lun)
+DSTATUS USBH_initialize(BYTE lun)
 {
-  Stat = STA_NOINIT;
+  /* CAUTION : USB Host library has to be initialized in the application */
 
-  /* Configure the SDRAM device */
-  if(BSP_SDRAM_Init() == SDRAM_OK)
-  {
-    Stat &= ~STA_NOINIT;
-  }
-
-  return Stat;
+  return RES_OK;
 }
 
 /**
   * @brief  Gets Disk Status
-  * @param  lun : not used
+  * @param  lun : lun id
   * @retval DSTATUS: Operation status
   */
-DSTATUS SDRAMDISK_status(BYTE lun)
+DSTATUS USBH_status(BYTE lun)
 {
-  return Stat;
+  DRESULT res = RES_ERROR;
+
+  if(USBH_MSC_UnitIsReady(&hUSB_Host, lun))
+  {
+    res = RES_OK;
+  }
+  else
+  {
+    res = RES_ERROR;
+  }
+
+  return res;
 }
 
 /* USER CODE BEGIN beforeReadSection */
@@ -97,24 +103,41 @@ DSTATUS SDRAMDISK_status(BYTE lun)
 
 /**
   * @brief  Reads Sector(s)
-  * @param  lun : not used
+  * @param  lun : lun id
   * @param  *buff: Data buffer to store read data
   * @param  sector: Sector address (LBA)
   * @param  count: Number of sectors to read (1..128)
   * @retval DRESULT: Operation result
   */
-DRESULT SDRAMDISK_read(BYTE lun, BYTE *buff, DWORD sector, UINT count)
+DRESULT USBH_read(BYTE lun, BYTE *buff, DWORD sector, UINT count)
 {
-  uint32_t *pSrcBuffer = (uint32_t *)buff;
-  uint32_t BufferSize = (BLOCK_SIZE * count)/4;
-  uint32_t *pSdramAddress = (uint32_t *) (SDRAM_DEVICE_ADDR + (sector * BLOCK_SIZE));
+  DRESULT res = RES_ERROR;
+  MSC_LUNTypeDef info;
 
-  for(; BufferSize != 0; BufferSize--)
+  if(USBH_MSC_Read(&hUSB_Host, lun, sector, buff, count) == USBH_OK)
   {
-    *pSrcBuffer++ = *(__IO uint32_t *)pSdramAddress++;
+    res = RES_OK;
+  }
+  else
+  {
+    USBH_MSC_GetLUNInfo(&hUSB_Host, lun, &info);
+
+    switch (info.sense.asc)
+    {
+    case SCSI_ASC_LOGICAL_UNIT_NOT_READY:
+    case SCSI_ASC_MEDIUM_NOT_PRESENT:
+    case SCSI_ASC_NOT_READY_TO_READY_CHANGE:
+      USBH_ErrLog ("USB Disk is not ready!");
+      res = RES_NOTRDY;
+      break;
+
+    default:
+      res = RES_ERROR;
+      break;
+    }
   }
 
-  return RES_OK;
+  return res;
 }
 
 /* USER CODE BEGIN beforeWriteSection */
@@ -123,25 +146,47 @@ DRESULT SDRAMDISK_read(BYTE lun, BYTE *buff, DWORD sector, UINT count)
 
 /**
   * @brief  Writes Sector(s)
-  * @param  lun : not used
+  * @param  lun : lun id
   * @param  *buff: Data to be written
   * @param  sector: Sector address (LBA)
   * @param  count: Number of sectors to write (1..128)
   * @retval DRESULT: Operation result
   */
 #if _USE_WRITE == 1
-DRESULT SDRAMDISK_write(BYTE lun, const BYTE *buff, DWORD sector, UINT count)
+DRESULT USBH_write(BYTE lun, const BYTE *buff, DWORD sector, UINT count)
 {
-  uint32_t *pDstBuffer = (uint32_t *)buff;
-  uint32_t BufferSize = (BLOCK_SIZE * count)/4;
-  uint32_t *pSramAddress = (uint32_t *) (SDRAM_DEVICE_ADDR + (sector * BLOCK_SIZE));
+  DRESULT res = RES_ERROR;
+  MSC_LUNTypeDef info;
 
-  for(; BufferSize != 0; BufferSize--)
+  if(USBH_MSC_Write(&hUSB_Host, lun, sector, (BYTE *)buff, count) == USBH_OK)
   {
-    *(__IO uint32_t *)pSramAddress++ = *pDstBuffer++;
+    res = RES_OK;
+  }
+  else
+  {
+    USBH_MSC_GetLUNInfo(&hUSB_Host, lun, &info);
+
+    switch (info.sense.asc)
+    {
+    case SCSI_ASC_WRITE_PROTECTED:
+      USBH_ErrLog("USB Disk is Write protected!");
+      res = RES_WRPRT;
+      break;
+
+    case SCSI_ASC_LOGICAL_UNIT_NOT_READY:
+    case SCSI_ASC_MEDIUM_NOT_PRESENT:
+    case SCSI_ASC_NOT_READY_TO_READY_CHANGE:
+      USBH_ErrLog("USB Disk is not ready!");
+      res = RES_NOTRDY;
+      break;
+
+    default:
+      res = RES_ERROR;
+      break;
+    }
   }
 
-  return RES_OK;
+  return res;
 }
 #endif /* _USE_WRITE == 1 */
 
@@ -151,41 +196,62 @@ DRESULT SDRAMDISK_write(BYTE lun, const BYTE *buff, DWORD sector, UINT count)
 
 /**
   * @brief  I/O control operation
-  * @param  lun : not used
+  * @param  lun : lun id
   * @param  cmd: Control code
   * @param  *buff: Buffer to send/receive control data
   * @retval DRESULT: Operation result
   */
 #if _USE_IOCTL == 1
-DRESULT SDRAMDISK_ioctl(BYTE lun, BYTE cmd, void *buff)
+DRESULT USBH_ioctl(BYTE lun, BYTE cmd, void *buff)
 {
   DRESULT res = RES_ERROR;
-
-  if (Stat & STA_NOINIT) return RES_NOTRDY;
+  MSC_LUNTypeDef info;
 
   switch (cmd)
   {
   /* Make sure that no pending write process */
-  case CTRL_SYNC :
+  case CTRL_SYNC:
     res = RES_OK;
     break;
 
   /* Get number of sectors on the disk (DWORD) */
   case GET_SECTOR_COUNT :
-    *(DWORD*)buff = SDRAM_DEVICE_SIZE / BLOCK_SIZE;
-    res = RES_OK;
+    if(USBH_MSC_GetLUNInfo(&hUSB_Host, lun, &info) == USBH_OK)
+    {
+      *(DWORD*)buff = info.capacity.block_nbr;
+      res = RES_OK;
+    }
+    else
+    {
+      res = RES_ERROR;
+    }
     break;
 
   /* Get R/W sector size (WORD) */
   case GET_SECTOR_SIZE :
-    *(WORD*)buff = BLOCK_SIZE;
-    res = RES_OK;
+    if(USBH_MSC_GetLUNInfo(&hUSB_Host, lun, &info) == USBH_OK)
+    {
+      *(DWORD*)buff = info.capacity.block_size;
+      res = RES_OK;
+    }
+    else
+    {
+      res = RES_ERROR;
+    }
     break;
 
-  /* Get erase block size in unit of sector (DWORD) */
+    /* Get erase block size in unit of sector (DWORD) */
   case GET_BLOCK_SIZE :
-    *(DWORD*)buff = 1;
-	res = RES_OK;
+
+    if(USBH_MSC_GetLUNInfo(&hUSB_Host, lun, &info) == USBH_OK)
+    {
+      *(DWORD*)buff = info.capacity.block_size / USB_DEFAULT_BLOCK_SIZE;
+      res = RES_OK;
+    }
+    else
+    {
+      res = RES_ERROR;
+    }
     break;
 
   default:
@@ -199,4 +265,3 @@ DRESULT SDRAMDISK_ioctl(BYTE lun, BYTE cmd, void *buff)
 /* USER CODE BEGIN lastSection */
 /* can be used to modify / undefine previous code or add new code */
 /* USER CODE END lastSection */
-

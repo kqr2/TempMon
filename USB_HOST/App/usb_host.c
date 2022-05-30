@@ -22,10 +22,11 @@
 
 #include "usb_host.h"
 #include "usbh_core.h"
-#include "usbh_cdc.h"
+#include "usbh_msc.h"
 
 /* USER CODE BEGIN Includes */
-
+#include <stdio.h>
+#include "fatfs.h"
 /* USER CODE END Includes */
 
 /* USER CODE BEGIN PV */
@@ -76,7 +77,7 @@ void MX_USB_HOST_Init(void)
   {
     Error_Handler();
   }
-  if (USBH_RegisterClass(&hUsbHostHS, USBH_CDC_CLASS) != USBH_OK)
+  if (USBH_RegisterClass(&hUsbHostHS, USBH_MSC_CLASS) != USBH_OK)
   {
     Error_Handler();
   }
@@ -97,6 +98,7 @@ void MX_USB_HOST_Process(void)
   /* USB Host Background task */
   USBH_Process(&hUsbHostHS);
 }
+
 /*
  * user callback definition
  */
@@ -110,14 +112,18 @@ static void USBH_UserProcess  (USBH_HandleTypeDef *phost, uint8_t id)
 
   case HOST_USER_DISCONNECTION:
   Appli_state = APPLICATION_DISCONNECT;
+  printf("USB disconnect\r\n");
   break;
 
   case HOST_USER_CLASS_ACTIVE:
   Appli_state = APPLICATION_READY;
+  FatFS_open();
+  printf("USB active\r\n");
   break;
 
   case HOST_USER_CONNECTION:
   Appli_state = APPLICATION_START;
+  printf("USB start\n");
   break;
 
   default:

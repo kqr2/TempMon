@@ -18,7 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-//#include "fatfs.h"
+#include "fatfs.h"
 #include "usb_host.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -118,7 +118,7 @@ int main(void)
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
-  //MX_GPIO_Init();
+  MX_GPIO_Init();
   //MX_CRC_Init();
   //MX_DMA2D_Init();
   //MX_FMC_Init();
@@ -127,10 +127,9 @@ int main(void)
   //MX_SPI5_Init();
   //MX_TIM1_Init();
   MX_USART1_UART_Init();
-  //MX_USB_HOST_Init();
+  MX_USB_HOST_Init();
   //MX_ADC1_Init();
-  //MX_FATFS_Init();
-
+  MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
 
   // https://embedded.fm/blog/2017/1/19/discovery-uart-input
@@ -176,20 +175,13 @@ int main(void)
   uint8_t addr;
   uint32_t temp;
   uint8_t temp_buf[32];
-
-  addr = 0x48 << 1;
-  temp = BSP_TempSensors_Read_Temp(addr);
-  temp *= 625;
-  sprintf(temp_buf, "Temp 0x%02x : %u.%u", addr, temp/10000, temp % 10000);
-  BSP_LCD_DisplayStringAtLine(1, temp_buf);
-
-  addr = 0x4B << 1;
-  temp = BSP_TempSensors_Read_Temp(addr);
-  temp *= 625;
-  sprintf(temp_buf, "Temp 0x%02x : %u.%u", addr, temp/10000, temp % 10000);
-  BSP_LCD_DisplayStringAtLine(2, temp_buf);
-
-  BSP_LCD_DisplayStringAtLine(3, (uint8_t *)"IJKL");
+  uint32_t i = 0;
+  uint32_t j = 0;
+  uint32_t byteswritten;
+  char *newline = "\r\n";
+  int nl = strlen(newline);
+  int opened = 1;
+  FRESULT res;
 
   /* USER CODE END 2 */
 
@@ -198,10 +190,45 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-    //MX_USB_HOST_Process();
+    MX_USB_HOST_Process();
 
     /* USER CODE BEGIN 3 */
     ConsoleProcess();
+
+    if (i++ % 500 == 0) {
+      sprintf(temp_buf, "Itr: %u", j++);
+      BSP_LCD_DisplayStringAtLine(1, temp_buf);
+      if (Appli_state == APPLICATION_READY && opened) {
+	res = f_write(&USBHFile, temp_buf, strlen(temp_buf), (void *)&byteswritten);
+	res = f_write(&USBHFile, newline, nl, (void *)&byteswritten);
+      }
+      
+      addr = 0x48 << 1;
+      temp = BSP_TempSensors_Read_Temp(addr);
+      temp *= 625;
+      sprintf(temp_buf, "Temp 0x%02x : %u.%u", addr, temp/10000, temp % 10000);
+      BSP_LCD_DisplayStringAtLine(2, temp_buf);
+      if (Appli_state == APPLICATION_READY && opened) {
+	res = f_write(&USBHFile, temp_buf, strlen(temp_buf), (void *)&byteswritten);
+	res = f_write(&USBHFile, newline, nl, (void *)&byteswritten);
+      }
+
+
+      addr = 0x4B << 1;
+      temp = BSP_TempSensors_Read_Temp(addr);
+      temp *= 625;
+      sprintf(temp_buf, "Temp 0x%02x : %u.%u", addr, temp/10000, temp % 10000);
+      BSP_LCD_DisplayStringAtLine(3, temp_buf);
+      if (Appli_state == APPLICATION_READY && opened) {
+	res = f_write(&USBHFile, temp_buf, strlen(temp_buf), (void *)&byteswritten);
+	res = f_write(&USBHFile, newline, nl, (void *)&byteswritten);
+      }
+
+      if (j == 10) {
+	opened = 0;
+	FatFS_close();
+      }
+    }
 
     HAL_Delay(2);
   }
@@ -262,6 +289,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
   HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5);
 }
+
 
 #if 0
 /**
