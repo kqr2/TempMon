@@ -27,6 +27,7 @@
 #include "stm32f429i_discovery.h"
 #include "stm32f429i_discovery_lcd.h"
 #include "sys_tmp102.h"
+#include "SparkFun_RV8803.h"
 #include "../Console/console.h"
 
 
@@ -172,6 +173,11 @@ int main(void)
   BSP_LCD_SetFont(&Font16);
 
   sys_tmp102_init();
+  RV8803 rtc;
+  printf("RTC 0x%02x\r\n",rtc.readRegister(RV8803_FLAG));
+  //rtc.setTime(0, 0, 11, 0, 27, 5, 2022);
+  rtc.updateTime();
+  printf("%s\r\n", rtc.stringDateUSA());
 
   uint8_t addr;
   uint32_t temp;
@@ -197,7 +203,7 @@ int main(void)
     ConsoleProcess();
 
     if (i++ % 500 == 0) {
-      sprintf(temp_buf, "Iteration: %u", j++);
+      sprintf(temp_buf, "Iters: %u", j++);
       BSP_LCD_DisplayStringAtLine(1, temp_buf);
       if (Appli_state == APPLICATION_READY && opened) {
 	res = f_write(&USBHFile, temp_buf, strlen(temp_buf), (void *)&byteswritten);
