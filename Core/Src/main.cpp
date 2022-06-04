@@ -67,7 +67,11 @@ UART_HandleTypeDef huart1;
 SDRAM_HandleTypeDef hsdram1;
 
 /* USER CODE BEGIN PV */
-
+#define BUTTON_DEBOUNCE_COUNT  3
+static bool button_interrupt = false;				// Start debouncing 
+static int button_state = 0;					// Debounced button state
+static int button_last = 0;					// Last button read
+static int button_debounce_cntr = BUTTON_DEBOUNCE_COUNT;	// Debounce counter
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -172,6 +176,11 @@ int main(void)
   BSP_LCD_SetTextColor(LCD_COLOR_DARKGRAY);
   BSP_LCD_SetFont(&Font16);
 
+  /* Initialize user button to cause an interrupt */
+  BSP_PB_Init(BUTTON_KEY, BUTTON_MODE_EXTI);
+  button_state = BSP_PB_GetState(BUTTON_KEY);
+  button_last = button_state;
+
   sys_tmp102_init();
   RV8803 rtc;
   printf("RTC 0x%02x\r\n",rtc.readRegister(RV8803_FLAG));
@@ -201,6 +210,27 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     ConsoleProcess();
+
+    if (button_interrupt) {
+      // read the current state of the switch into a local variable:
+      int button = BSP_PB_GetState(BUTTON_KEY);
+      
+      if (button != button_last) {
+	button_debounce_cntr = BUTTON_DEBOUNCE_COUNT;
+      } else {
+	button_debounce_cntr--;
+      }
+      button_last = button;
+      
+      if (button_debounce_cntr <= 0) {
+	// Buton debounce
+	button_state = button;
+	button_interrupt = false;
+      }
+    } else if (button_state) {
+      printf("Button processed\r\n");
+      button_state = 0;
+    }
 
     if (i++ % 500 == 0) {
       sprintf(temp_buf, "Iters: %u", j++);
@@ -820,7 +850,10 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  button_interrupt = true;
+}
 /* USER CODE END 4 */
 
 /**
