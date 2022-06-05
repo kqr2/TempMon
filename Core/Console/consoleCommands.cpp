@@ -7,12 +7,15 @@
 //		3. Implement the function, using ConsoleReceiveParam<Type> to get the parameters from the buffer.
 
 #include <string.h>
+#include <stdio.h>
 #include "consoleCommands.h"
 #include "console.h"
 #include "consoleIo.h"
 #include "version.h"
 #include "stm32f4xx_hal.h"
 #include "sys.h"
+
+extern sys_t sys;
 
 
 #define IGNORE_UNUSED_VARIABLE(x)     if ( &x == &x ) {}
@@ -23,6 +26,8 @@ static eCommandResult_T ConsoleCommandHelp(const char buffer[]);
 static eCommandResult_T ConsoleCommandParamExampleInt16(const char buffer[]);
 static eCommandResult_T ConsoleCommandParamExampleHexUint16(const char buffer[]);
 
+static eCommandResult_T ConsoleCommandRtcTime(const char buffer[]);
+
 
 static const sConsoleCommandTable_T mConsoleCommandTable[] =
 {
@@ -32,7 +37,9 @@ static const sConsoleCommandTable_T mConsoleCommandTable[] =
     {"int", &ConsoleCommandParamExampleInt16, HELP("How to get a signed int16 from params list: int -321")},
     {"u16h", &ConsoleCommandParamExampleHexUint16, HELP("How to get a hex u16 from the params list: u16h aB12")},
 
-	CONSOLE_COMMAND_TABLE_END // must be LAST
+    {"rtc_time", &ConsoleCommandRtcTime, HELP("Get the current rtc time")},
+    
+    CONSOLE_COMMAND_TABLE_END // must be LAST
 };
 
 static eCommandResult_T ConsoleCommandComment(const char buffer[])
@@ -108,5 +115,16 @@ static eCommandResult_T ConsoleCommandVer(const char buffer[])
 const sConsoleCommandTable_T* ConsoleCommandsGetTable(void)
 {
 	return (mConsoleCommandTable);
+}
+
+
+static eCommandResult_T ConsoleCommandRtcTime(const char buffer[])
+{
+  RV8803 *rtc = &sys.rtc;
+
+  rtc->updateTime();
+  printf("%s\r\n", rtc->stringDateUSA());
+
+  return COMMAND_SUCCESS;
 }
 

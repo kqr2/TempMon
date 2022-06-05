@@ -181,13 +181,11 @@ int main(void)
   button_last = button_state;
 
   sys_init(&sys);
-  
+
   RV8803 *rtc = &sys.rtc;
   printf("RTC 0x%02x\r\n",rtc->readRegister(RV8803_FLAG));
   //rtc.setTime(0, 0, 11, 0, 27, 5, 2022);
-  rtc->updateTime();
-  printf("%s\r\n", rtc->stringDateUSA());
-
+  
   uint8_t addr;
   uint32_t temp;
   uint8_t temp_buf[32];
