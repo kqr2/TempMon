@@ -182,10 +182,6 @@ int main(void)
 
   sys_init(&sys);
 
-  RV8803 *rtc = &sys.rtc;
-  printf("RTC 0x%02x\r\n",rtc->readRegister(RV8803_FLAG));
-  //rtc.setTime(0, 0, 11, 0, 27, 5, 2022);
-  
   uint8_t addr;
   uint32_t temp;
   uint8_t temp_buf[32];
