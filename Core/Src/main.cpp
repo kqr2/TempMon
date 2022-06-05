@@ -66,11 +66,20 @@ UART_HandleTypeDef huart1;
 SDRAM_HandleTypeDef hsdram1;
 
 /* USER CODE BEGIN PV */
+sys_t sys;
+
 #define BUTTON_DEBOUNCE_COUNT  3
 static bool button_interrupt = false;				// Start debouncing 
-static int button_state = 0;					// Debounced button state
+static int button_pressed = 0;					// Debounced button press
 static int button_last = 0;					// Last button read
 static int button_debounce_cntr = BUTTON_DEBOUNCE_COUNT;	// Debounce counter
+
+typedef enum {
+    TEMPMON_STATE_IDLE,
+    TEMPMON_STATE_SCAN,
+    TEMPMON_STATE_MONITOR,
+} tempmon_state_t;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -93,7 +102,6 @@ void MX_USB_HOST_Process(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-sys_t sys;
 /* USER CODE END 0 */
 
 /**
@@ -177,12 +185,12 @@ int main(void)
 
   /* Initialize user button to cause an interrupt */
   BSP_PB_Init(BUTTON_KEY, BUTTON_MODE_EXTI);
-  button_state = BSP_PB_GetState(BUTTON_KEY);
-  button_last = button_state;
+  button_pressed = BSP_PB_GetState(BUTTON_KEY);
+  button_last = button_pressed;
 
   sys_init(&sys);
+  tempmon_state_t state = TEMPMON_STATE_MONITOR;
 
-  uint8_t addr;
   uint32_t temp;
   uint8_t temp_buf[32];
   uint32_t i = 0;
@@ -205,6 +213,7 @@ int main(void)
     /* USER CODE BEGIN 3 */
     ConsoleProcess();
 
+    /* Process button */
     if (button_interrupt) {
       // read the current state of the switch into a local variable:
       int button = BSP_PB_GetState(BUTTON_KEY);
@@ -218,41 +227,66 @@ int main(void)
       
       if (button_debounce_cntr <= 0) {
 	// Buton debounce
-	button_state = button;
+	button_pressed = button;
 	button_interrupt = false;
       }
-    } else if (button_state) {
-      printf("Button processed\r\n");
-      button_state = 0;
     }
+    
+    switch (state) {
+    case TEMPMON_STATE_MONITOR:
+      if (i++ % 500 == 0) {
+	int line = 1;
+	sprintf(temp_buf, "Iters: %u", j++);
+	BSP_LCD_DisplayStringAtLine(line++, temp_buf);
+	if (Appli_state == APPLICATION_READY && opened) {
+	  res = f_write(&USBHFile, temp_buf, strlen(temp_buf), (void *)&byteswritten);
+	  res = f_write(&USBHFile, newline, nl, (void *)&byteswritten);
+	}
 
-    if (i++ % 500 == 0) {
-      int line = 1;
-      sprintf(temp_buf, "Iters: %u", j++);
-      BSP_LCD_DisplayStringAtLine(line++, temp_buf);
-      if (Appli_state == APPLICATION_READY && opened) {
-	res = f_write(&USBHFile, temp_buf, strlen(temp_buf), (void *)&byteswritten);
-	res = f_write(&USBHFile, newline, nl, (void *)&byteswritten);
-      }
-
-      for (int k=0; k<TMP102_MAX_SENSORS; k++) {
-	tmp102_t *tmp = &sys.tmp[k];
-	if (tmp->detect) {
-	  temp = tmp102_read_temp(tmp);
-	  temp *= 625;
-	  sprintf(temp_buf, "Temp 0x%02x : %u.%u", tmp->addr, temp/10000, temp % 10000);
-	  BSP_LCD_DisplayStringAtLine(line++, temp_buf);
-	  if (Appli_state == APPLICATION_READY && opened) {
-	    res = f_write(&USBHFile, temp_buf, strlen(temp_buf), (void *)&byteswritten);
-	    res = f_write(&USBHFile, newline, nl, (void *)&byteswritten);
+	for (int k=0; k<TMP102_MAX_SENSORS; k++) {
+	  tmp102_t *tmp = &sys.tmp[k];
+	  if (tmp->detect) {
+	    temp = tmp102_read_temp(tmp);
+	    temp *= 625;
+	    sprintf(temp_buf, "Temp 0x%02x : %u.%u", tmp->addr, temp/10000, temp % 10000);
+	    BSP_LCD_DisplayStringAtLine(line++, temp_buf);
+	    if (Appli_state == APPLICATION_READY && opened) {
+	      res = f_write(&USBHFile, temp_buf, strlen(temp_buf), (void *)&byteswritten);
+	      res = f_write(&USBHFile, newline, nl, (void *)&byteswritten);
+	    }
 	  }
 	}
-      }
 
-      if (j == 10) {
-	opened = 0;
-	FatFS_close();
+	if (j == 10) {
+	  opened = 0;
+	  FatFS_close();
+	}
       }
+      if (button_pressed) {
+	BSP_LCD_Clear(LCD_COLOR_WHITE);
+	state = TEMPMON_STATE_IDLE;
+      }
+      break;
+    case TEMPMON_STATE_SCAN:
+      BSP_LCD_DisplayStringAtLine(1, "Scanning");
+      if (button_pressed) {
+	BSP_LCD_Clear(LCD_COLOR_WHITE);
+	state = TEMPMON_STATE_MONITOR;
+      }
+      break;
+    case TEMPMON_STATE_IDLE:
+      BSP_LCD_DisplayStringAtLine(1, "Idle");
+      if (button_pressed) {
+	state = TEMPMON_STATE_SCAN;
+	BSP_LCD_Clear(LCD_COLOR_WHITE);
+      }
+    default:
+      break;      
+    }
+
+    if (button_pressed) {
+      printf("Button processed\r\n");
+      button_pressed = 0;
     }
 
     HAL_Delay(2);
