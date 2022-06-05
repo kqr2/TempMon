@@ -11,5 +11,6 @@ typedef struct {
 } sys_t;
 
 void sys_init(sys_t *sys);
+bool sys_tmp_rescan(sys_t *sys);
 
 #endif /* __SYS__H */   

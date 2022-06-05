@@ -234,7 +234,7 @@ int main(void)
     
     switch (state) {
     case TEMPMON_STATE_MONITOR:
-      if (i++ % 500 == 0) {
+      if (i % 500 == 0) {
 	int line = 1;
 	sprintf(temp_buf, "Iters: %u", j++);
 	BSP_LCD_DisplayStringAtLine(line++, temp_buf);
@@ -268,7 +268,23 @@ int main(void)
       }
       break;
     case TEMPMON_STATE_SCAN:
-      BSP_LCD_DisplayStringAtLine(1, "Scanning");
+
+      if (i % 500 == 0) {
+	// Re-scan
+	int line = 1;
+	if (sys_tmp_rescan(&sys)) {
+	  BSP_LCD_Clear(LCD_COLOR_WHITE);
+	}
+	sprintf(temp_buf, "Scanning: %u", j++);
+	BSP_LCD_DisplayStringAtLine(line++, temp_buf);
+	for (int k=0; k<TMP102_MAX_SENSORS; k++) {
+	  tmp102_t *tmp = &sys.tmp[k];
+	  if (tmp->detect) {
+	    sprintf(temp_buf, "Temp 0x%02x detected", tmp->addr);
+	    BSP_LCD_DisplayStringAtLine(line++, temp_buf);
+	  }
+	}
+      }
       if (button_pressed) {
 	BSP_LCD_Clear(LCD_COLOR_WHITE);
 	state = TEMPMON_STATE_MONITOR;
@@ -279,7 +295,9 @@ int main(void)
       if (button_pressed) {
 	state = TEMPMON_STATE_SCAN;
 	BSP_LCD_Clear(LCD_COLOR_WHITE);
+	j = 0;
       }
+      break;
     default:
       break;      
     }
@@ -290,6 +308,7 @@ int main(void)
     }
 
     HAL_Delay(2);
+    i++;
   }
   /* USER CODE END 3 */
 }
