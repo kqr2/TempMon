@@ -5,6 +5,11 @@
 #ifndef CONSOLE_COMMANDS_H
 #define CONSOLE_COMMANDS_H
 
+#ifdef __cplusplus
+ extern "C" {
+#endif
+
+
 #include <stdint.h>
 #include "console.h"
 
@@ -34,6 +39,10 @@ typedef struct sConsoleCommandStruct
 #define CONSOLE_COMMAND_TABLE_END {NULL, NULL, HELP("")}
 
 const sConsoleCommandTable_T* ConsoleCommandsGetTable(void);
+
+#ifdef __cplusplus
+}
+#endif   
 
 #endif // CONSOLE_COMMANDS_H
 
