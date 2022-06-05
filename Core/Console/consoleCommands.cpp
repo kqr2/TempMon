@@ -27,6 +27,7 @@ static eCommandResult_T ConsoleCommandParamExampleInt16(const char buffer[]);
 static eCommandResult_T ConsoleCommandParamExampleHexUint16(const char buffer[]);
 
 static eCommandResult_T ConsoleCommandRtcTime(const char buffer[]);
+static eCommandResult_T ConsoleCommandRtcSet(const char buffer[]);
 
 
 static const sConsoleCommandTable_T mConsoleCommandTable[] =
@@ -38,6 +39,7 @@ static const sConsoleCommandTable_T mConsoleCommandTable[] =
     {"u16h", &ConsoleCommandParamExampleHexUint16, HELP("How to get a hex u16 from the params list: u16h aB12")},
 
     {"rtc_time", &ConsoleCommandRtcTime, HELP("Get the current rtc time")},
+    {"rtc_set", &ConsoleCommandRtcSet, HELP("Set the current rtc time")},
     
     CONSOLE_COMMAND_TABLE_END // must be LAST
 };
@@ -123,7 +125,20 @@ static eCommandResult_T ConsoleCommandRtcTime(const char buffer[])
   RV8803 *rtc = &sys.rtc;
 
   rtc->updateTime();
-  printf("%s\r\n", rtc->stringDateUSA());
+  printf("%s,%s\n\r", rtc->stringDateUSA(), rtc->stringTime());
+
+  return COMMAND_SUCCESS;
+}
+
+static eCommandResult_T ConsoleCommandRtcSet(const char buffer[])
+{
+  char cmd[16];
+  unsigned long unix;
+
+  if (sscanf(buffer, "%s %lu", cmd, &unix) == 2) {
+    RV8803 *rtc = &sys.rtc;
+    rtc->setEpoch(unix, false);
+  }
 
   return COMMAND_SUCCESS;
 }
