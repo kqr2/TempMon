@@ -26,8 +26,7 @@
 #include <stdio.h>
 #include "stm32f429i_discovery.h"
 #include "stm32f429i_discovery_lcd.h"
-#include "sys_tmp102.h"
-#include "SparkFun_RV8803.h"
+#include "sys.h"
 #include "../Console/console.h"
 
 
@@ -94,7 +93,7 @@ void MX_USB_HOST_Process(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+sys_t sys;
 /* USER CODE END 0 */
 
 /**
@@ -181,12 +180,13 @@ int main(void)
   button_state = BSP_PB_GetState(BUTTON_KEY);
   button_last = button_state;
 
-  sys_tmp102_init();
-  RV8803 rtc;
-  printf("RTC 0x%02x\r\n",rtc.readRegister(RV8803_FLAG));
+  sys_init(&sys);
+  
+  RV8803 *rtc = &sys.rtc;
+  printf("RTC 0x%02x\r\n",rtc->readRegister(RV8803_FLAG));
   //rtc.setTime(0, 0, 11, 0, 27, 5, 2022);
-  rtc.updateTime();
-  printf("%s\r\n", rtc.stringDateUSA());
+  rtc->updateTime();
+  printf("%s\r\n", rtc->stringDateUSA());
 
   uint8_t addr;
   uint32_t temp;
@@ -233,32 +233,26 @@ int main(void)
     }
 
     if (i++ % 500 == 0) {
+      int line = 1;
       sprintf(temp_buf, "Iters: %u", j++);
-      BSP_LCD_DisplayStringAtLine(1, temp_buf);
-      if (Appli_state == APPLICATION_READY && opened) {
-	res = f_write(&USBHFile, temp_buf, strlen(temp_buf), (void *)&byteswritten);
-	res = f_write(&USBHFile, newline, nl, (void *)&byteswritten);
-      }
-      
-      addr = 0x48 << 1;
-      temp = sys_tmp102_read_temp(addr);
-      temp *= 625;
-      sprintf(temp_buf, "Temp 0x%02x : %u.%u", addr, temp/10000, temp % 10000);
-      BSP_LCD_DisplayStringAtLine(2, temp_buf);
+      BSP_LCD_DisplayStringAtLine(line++, temp_buf);
       if (Appli_state == APPLICATION_READY && opened) {
 	res = f_write(&USBHFile, temp_buf, strlen(temp_buf), (void *)&byteswritten);
 	res = f_write(&USBHFile, newline, nl, (void *)&byteswritten);
       }
 
-
-      addr = 0x4B << 1;
-      temp = sys_tmp102_read_temp(addr);
-      temp *= 625;
-      sprintf(temp_buf, "Temp 0x%02x : %u.%u", addr, temp/10000, temp % 10000);
-      BSP_LCD_DisplayStringAtLine(3, temp_buf);
-      if (Appli_state == APPLICATION_READY && opened) {
-	res = f_write(&USBHFile, temp_buf, strlen(temp_buf), (void *)&byteswritten);
-	res = f_write(&USBHFile, newline, nl, (void *)&byteswritten);
+      for (int k=0; k<TMP102_MAX_SENSORS; k++) {
+	tmp102_t *tmp = &sys.tmp[k];
+	if (tmp->detect) {
+	  temp = tmp102_read_temp(tmp);
+	  temp *= 625;
+	  sprintf(temp_buf, "Temp 0x%02x : %u.%u", tmp->addr, temp/10000, temp % 10000);
+	  BSP_LCD_DisplayStringAtLine(line++, temp_buf);
+	  if (Appli_state == APPLICATION_READY && opened) {
+	    res = f_write(&USBHFile, temp_buf, strlen(temp_buf), (void *)&byteswritten);
+	    res = f_write(&USBHFile, newline, nl, (void *)&byteswritten);
+	  }
+	}
       }
 
       if (j == 10) {
@@ -852,7 +846,10 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-  button_interrupt = true;
+  if (GPIO_Pin == KEY_BUTTON_PIN) {
+    button_interrupt = true;
+    button_debounce_cntr = BUTTON_DEBOUNCE_COUNT;
+  }
 }
 /* USER CODE END 4 */
 

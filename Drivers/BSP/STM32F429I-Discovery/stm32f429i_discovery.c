@@ -436,6 +436,9 @@ static void I2Cx_ITConfig(void)
   HAL_NVIC_EnableIRQ((IRQn_Type)(STMPE811_INT_EXTI));
 }
 
+HAL_StatusTypeDef I2Cx_Detect(uint8_t Addr) {
+  return HAL_I2C_IsDeviceReady(&I2cHandle, Addr, 3, 5);
+}
 
 HAL_StatusTypeDef I2Cx_Master_Transmit(uint8_t Addr, uint8_t *pData, uint16_t Size)
 {
