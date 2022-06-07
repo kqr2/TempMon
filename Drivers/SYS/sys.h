@@ -6,6 +6,7 @@
 #include "tmp102.h"
 
 typedef struct {
+  int      ntmp;
   tmp102_t tmp[TMP102_MAX_SENSORS];
   RV8803 rtc;
 } sys_t;

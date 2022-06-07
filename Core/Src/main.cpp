@@ -196,6 +196,7 @@ int main(void)
   button_last = button_pressed;
 
   sys_init(&sys);
+  RV8803 *rtc = &sys.rtc;
   tempmon_state_t state = TEMPMON_STATE_MONITOR;
 
   uint32_t temp;
@@ -243,7 +244,10 @@ int main(void)
     case TEMPMON_STATE_MONITOR:
       if (i % 500 == 0) {
 	int line = 1;
-	BSP_LCD_SPRINTF(line++, temp_buf, "Iters: %u", j++);
+	rtc->updateTime();
+	BSP_LCD_SPRINTF(line++, temp_buf, "%s %s",
+			rtc->stringDateUSA(), rtc->stringTime());
+	BSP_LCD_SPRINTF(line++, temp_buf, "Samples: %u", j++);
 	if (Appli_state == APPLICATION_READY && opened) {
 	  res = f_write(&USBHFile, temp_buf, strlen(temp_buf), (void *)&byteswritten);
 	  res = f_write(&USBHFile, newline, nl, (void *)&byteswritten);
@@ -287,6 +291,9 @@ int main(void)
 	  if (tmp->detect) {
 	    BSP_LCD_SPRINTF(line++, temp_buf, "Temp 0x%02x detected", tmp->addr);
 	  }
+	}
+	if (sys.ntmp == 0) {
+	  BSP_LCD_DisplayStringAtLine(line, "Please attach sensors");
 	}
       }
       if (button_pressed) {
