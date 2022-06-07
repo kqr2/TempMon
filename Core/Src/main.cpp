@@ -102,6 +102,13 @@ void MX_USB_HOST_Process(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+// Print on the LCD
+#define BSP_LCD_SPRINTF(line, buf, fmt, ...)\
+  sprintf(buf, fmt, __VA_ARGS__);\
+  BSP_LCD_DisplayStringAtLine(line, buf);
+
+
 /* USER CODE END 0 */
 
 /**
@@ -236,8 +243,7 @@ int main(void)
     case TEMPMON_STATE_MONITOR:
       if (i % 500 == 0) {
 	int line = 1;
-	sprintf(temp_buf, "Iters: %u", j++);
-	BSP_LCD_DisplayStringAtLine(line++, temp_buf);
+	BSP_LCD_SPRINTF(line++, temp_buf, "Iters: %u", j++);
 	if (Appli_state == APPLICATION_READY && opened) {
 	  res = f_write(&USBHFile, temp_buf, strlen(temp_buf), (void *)&byteswritten);
 	  res = f_write(&USBHFile, newline, nl, (void *)&byteswritten);
@@ -248,8 +254,8 @@ int main(void)
 	  if (tmp->detect) {
 	    temp = tmp102_read_temp(tmp);
 	    temp *= 625;
-	    sprintf(temp_buf, "Temp 0x%02x : %u.%u", tmp->addr, temp/10000, temp % 10000);
-	    BSP_LCD_DisplayStringAtLine(line++, temp_buf);
+	    BSP_LCD_SPRINTF(line++, temp_buf,
+			    "Temp 0x%02x : %u.%u", tmp->addr, temp/10000, temp % 10000);
 	    if (Appli_state == APPLICATION_READY && opened) {
 	      res = f_write(&USBHFile, temp_buf, strlen(temp_buf), (void *)&byteswritten);
 	      res = f_write(&USBHFile, newline, nl, (void *)&byteswritten);
@@ -275,13 +281,11 @@ int main(void)
 	if (sys_tmp_rescan(&sys)) {
 	  BSP_LCD_Clear(LCD_COLOR_WHITE);
 	}
-	sprintf(temp_buf, "Scanning: %u", j++);
-	BSP_LCD_DisplayStringAtLine(line++, temp_buf);
+	BSP_LCD_SPRINTF(line++, temp_buf, "Scanning: %u", j++);
 	for (int k=0; k<TMP102_MAX_SENSORS; k++) {
 	  tmp102_t *tmp = &sys.tmp[k];
 	  if (tmp->detect) {
-	    sprintf(temp_buf, "Temp 0x%02x detected", tmp->addr);
-	    BSP_LCD_DisplayStringAtLine(line++, temp_buf);
+	    BSP_LCD_SPRINTF(line++, temp_buf, "Temp 0x%02x detected", tmp->addr);
 	  }
 	}
       }
