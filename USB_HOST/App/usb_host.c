@@ -112,6 +112,7 @@ static void USBH_UserProcess  (USBH_HandleTypeDef *phost, uint8_t id)
 
   case HOST_USER_DISCONNECTION:
   Appli_state = APPLICATION_DISCONNECT;
+  FatFS_close();
   printf("USB disconnect end\r\n");
   break;
 

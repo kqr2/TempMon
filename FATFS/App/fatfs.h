@@ -41,6 +41,7 @@ void MX_FATFS_Init(void);
 /* USER CODE BEGIN Prototypes */
 void FatFS_open(const char *fname);
 void FatFS_close(void);
+int FatFS_opened(void);
 /* USER CODE END Prototypes */
 #ifdef __cplusplus
 }

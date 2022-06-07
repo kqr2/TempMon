@@ -203,10 +203,11 @@ int main(void)
   uint8_t temp_buf[32];
   uint32_t i = 0;
   uint32_t j = 0;
+
+  char fname[64];
   uint32_t byteswritten;
   char *newline = "\r\n";
   int nl = strlen(newline);
-  int opened = 1;
   FRESULT res;
 
   /* USER CODE END 2 */
@@ -249,7 +250,15 @@ int main(void)
 	BSP_LCD_SPRINTF(line++, temp_buf, "%s %s",
 			rtc->stringDateUSA(), rtc->stringTime());
 	BSP_LCD_SPRINTF(line++, temp_buf, "Samples: %u", j++);
-	if (Appli_state == APPLICATION_READY && opened) {
+
+	if (!FatFS_opened()) {
+	  sprintf(fname, "TM_%04d%02d%02d_%02d%02d.TXT",
+		  rtc->getYear(), rtc->getMonth(), rtc->getDate(),
+		  rtc->getHours(), rtc->getMinutes());
+	  FatFS_open(fname);
+	}
+	
+	if (FatFS_opened()) {
 	  res = f_write(&USBHFile, temp_buf, strlen(temp_buf), (void *)&byteswritten);
 	  res = f_write(&USBHFile, newline, nl, (void *)&byteswritten);
 	}
@@ -261,26 +270,28 @@ int main(void)
 	    temp *= 625;
 	    BSP_LCD_SPRINTF(line++, temp_buf,
 			    "Temp 0x%02x : %u.%u", tmp->addr, temp/10000, temp % 10000);
-	    if (Appli_state == APPLICATION_READY && opened) {
+	    if (FatFS_opened()) {
 	      res = f_write(&USBHFile, temp_buf, strlen(temp_buf), (void *)&byteswritten);
 	      res = f_write(&USBHFile, newline, nl, (void *)&byteswritten);
 	    }
 	  }
 	}
-
-	if (j == 10) {
-	  opened = 0;
-	  FatFS_close();
-	}
       }
+    
       if (button_pressed) {
 	BSP_LCD_Clear(LCD_COLOR_WHITE);
+	if (FatFS_opened()) {
+	  FatFS_close();
+	  BSP_LCD_DisplayStringAtLine(1, "TEMPMON LOG FILE");
+	  BSP_LCD_DisplayStringAtLine(2, fname);
+	} else {
+	  BSP_LCD_DisplayStringAtLine(1, "INSERT USB FLASH DRIVE");
+	}
 	state = TEMPMON_STATE_IDLE;
       }
       break;
       
     case TEMPMON_STATE_SCAN:
-
       if (i % 500 == 0) {
 	// Re-scan
 	int line = 1;
@@ -298,6 +309,7 @@ int main(void)
 	  BSP_LCD_DisplayStringAtLine(line, "Please attach sensors");
 	}
       }
+      
       if (button_pressed) {
 	BSP_LCD_Clear(LCD_COLOR_WHITE);
 	state = TEMPMON_STATE_MONITOR;
@@ -305,7 +317,6 @@ int main(void)
       break;
       
     case TEMPMON_STATE_IDLE:
-      BSP_LCD_DisplayStringAtLine(1, "Idle");
       if (button_pressed) {
 	state = TEMPMON_STATE_SCAN;
 	BSP_LCD_Clear(LCD_COLOR_WHITE);
