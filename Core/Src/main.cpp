@@ -241,6 +241,7 @@ int main(void)
     }
     
     switch (state) {
+      
     case TEMPMON_STATE_MONITOR:
       if (i % 500 == 0) {
 	int line = 1;
@@ -277,6 +278,7 @@ int main(void)
 	state = TEMPMON_STATE_IDLE;
       }
       break;
+      
     case TEMPMON_STATE_SCAN:
 
       if (i % 500 == 0) {
@@ -301,6 +303,7 @@ int main(void)
 	state = TEMPMON_STATE_MONITOR;
       }
       break;
+      
     case TEMPMON_STATE_IDLE:
       BSP_LCD_DisplayStringAtLine(1, "Idle");
       if (button_pressed) {
