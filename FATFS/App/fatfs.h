@@ -39,7 +39,7 @@ extern FIL USBHFile; /* File object for USBH */
 void MX_FATFS_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-void FatFS_open(void);
+void FatFS_open(const char *fname);
 void FatFS_close(void);
 /* USER CODE END Prototypes */
 #ifdef __cplusplus

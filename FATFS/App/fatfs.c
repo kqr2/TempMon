@@ -22,6 +22,7 @@ uint8_t retUSBH;    /* Return value for USBH */
 char USBHPath[4];   /* USBH logical drive path */
 FATFS USBHFatFS;    /* File system object for USBH logical drive */
 FIL USBHFile;       /* File object for USBH */
+char USBFNAME[32] = "STM32.TXT";
 
 /* USER CODE BEGIN Variables */
 
@@ -106,13 +107,13 @@ void FatFS_close(void) {
     }
 }
 
-void FatFS_open(void)
+void FatFS_open(const char *fname)
 {
   FRESULT res;
 
   if(f_mount(&USBHFatFS, (TCHAR const*) USBHPath, 0) == FR_OK)
     {
-      res = f_open(&USBHFile, "STM32.TXT", FA_CREATE_ALWAYS | FA_WRITE);
+      res = f_open(&USBHFile, fname, FA_CREATE_ALWAYS | FA_WRITE);
 
       if (res != FR_OK)
 	{

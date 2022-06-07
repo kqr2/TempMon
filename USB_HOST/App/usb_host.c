@@ -112,18 +112,17 @@ static void USBH_UserProcess  (USBH_HandleTypeDef *phost, uint8_t id)
 
   case HOST_USER_DISCONNECTION:
   Appli_state = APPLICATION_DISCONNECT;
-  printf("USB disconnect\r\n");
+  printf("USB disconnect end\r\n");
   break;
 
   case HOST_USER_CLASS_ACTIVE:
   Appli_state = APPLICATION_READY;
-  FatFS_open();
   printf("USB active\r\n");
   break;
 
   case HOST_USER_CONNECTION:
   Appli_state = APPLICATION_START;
-  printf("USB start\n");
+  printf("USB connect start\n");
   break;
 
   default:
