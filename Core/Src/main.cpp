@@ -68,7 +68,7 @@ SDRAM_HandleTypeDef hsdram1;
 /* USER CODE BEGIN PV */
 sys_t sys;
 
-#define BUTTON_DEBOUNCE_COUNT  3
+#define BUTTON_DEBOUNCE_COUNT  5
 static bool button_interrupt = false;				// Start debouncing 
 static int button_pressed = 0;					// Debounced button press
 static int button_last = 0;					// Last button read
@@ -269,15 +269,12 @@ int main(void)
       default:
 	break;
       }
-      
-      button_pressed = 0;
     }
     
-    if (ticks % 500 == 0)  {
+    if (button_pressed || (ticks % 500 == 0))  {
       int line = 1;
 
       switch (state) {
-      
       case TEMPMON_STATE_MONITOR:
 	rtc->updateTime();
 	BSP_LCD_SPRINTF(line++, temp_buf, "%s %s",
@@ -352,6 +349,8 @@ int main(void)
 	break;      
       }
     }
+
+    button_pressed = 0;
 
     // Timer tick
     HAL_Delay(2);
