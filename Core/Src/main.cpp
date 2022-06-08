@@ -271,7 +271,7 @@ int main(void)
       }
     }
     
-    if (button_pressed || (ticks % 500 == 0))  {
+    if (button_pressed || (ticks % sys.timer_ticks == 0))  {
       int line = 1;
 
       switch (state) {
@@ -353,7 +353,7 @@ int main(void)
     button_pressed = 0;
 
     // Timer tick
-    HAL_Delay(2);
+    HAL_Delay(SYS_TIMER_TICK);
     ticks++;
   }
   /* USER CODE END 3 */
