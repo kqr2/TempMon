@@ -201,8 +201,8 @@ int main(void)
 
   uint32_t temp;
   uint8_t temp_buf[32];
-  uint32_t i = 0;
-  uint32_t j = 0;
+  uint32_t ticks = 0;
+  uint32_t samples = 0;
 
   char fname[64];
   uint32_t byteswritten;
@@ -240,16 +240,47 @@ int main(void)
 	button_interrupt = false;
       }
     }
-    
-    switch (state) {
+
+    // Process next state
+    if (button_pressed) {
+      BSP_LCD_Clear(LCD_COLOR_WHITE);
       
-    case TEMPMON_STATE_MONITOR:
-      if (i % 500 == 0) {
-	int line = 1;
+      switch (state) {
+      case TEMPMON_STATE_MONITOR:
+	if (FatFS_opened()) {
+	  FatFS_close();
+	  BSP_LCD_DisplayStringAtLine(1, "TEMPMON LOG FILE");
+	  BSP_LCD_DisplayStringAtLine(2, fname);
+	} else {
+	  BSP_LCD_DisplayStringAtLine(1, "INSERT FLASH DRIVE");
+	}
+	state = TEMPMON_STATE_IDLE;
+	break;
+      case TEMPMON_STATE_IDLE:
+	state = TEMPMON_STATE_SCAN;
+	samples = 0;
+	break;
+      case TEMPMON_STATE_SCAN:
+	state = TEMPMON_STATE_MONITOR;
+	samples = 0;
+	break;
+      default:
+	break;
+      }
+      
+      button_pressed = 0;
+    }
+    
+    if (ticks % 500 == 0)  {
+      int line = 1;
+
+      switch (state) {
+      
+      case TEMPMON_STATE_MONITOR:
 	rtc->updateTime();
 	BSP_LCD_SPRINTF(line++, temp_buf, "%s %s",
 			rtc->stringDateUSA(), rtc->stringTime());
-	BSP_LCD_SPRINTF(line++, temp_buf, "Samples: %u", j++);
+	BSP_LCD_SPRINTF(line++, temp_buf, "Samples: %u", samples++);
 
 	if (!FatFS_opened()) {
 	  sprintf(fname, "TM_%04d%02d%02d_%02d%02d.TXT",
@@ -276,29 +307,17 @@ int main(void)
 	    }
 	  }
 	}
-      }
-    
-      if (button_pressed) {
-	BSP_LCD_Clear(LCD_COLOR_WHITE);
-	if (FatFS_opened()) {
-	  FatFS_close();
-	  BSP_LCD_DisplayStringAtLine(1, "TEMPMON LOG FILE");
-	  BSP_LCD_DisplayStringAtLine(2, fname);
-	} else {
-	  BSP_LCD_DisplayStringAtLine(1, "INSERT USB FLASH DRIVE");
-	}
-	state = TEMPMON_STATE_IDLE;
-      }
-      break;
+	break;
+
+      case TEMPMON_STATE_IDLE:
+	break;      
       
-    case TEMPMON_STATE_SCAN:
-      if (i % 500 == 0) {
+      case TEMPMON_STATE_SCAN:
 	// Re-scan
-	int line = 1;
 	if (sys_tmp_rescan(&sys)) {
 	  BSP_LCD_Clear(LCD_COLOR_WHITE);
 	}
-	BSP_LCD_SPRINTF(line++, temp_buf, "Scanning: %u", j++);
+	BSP_LCD_SPRINTF(line++, temp_buf, "Scanning: %u", samples++);
 	for (int k=0; k<TMP102_MAX_SENSORS; k++) {
 	  tmp102_t *tmp = &sys.tmp[k];
 	  if (tmp->detect) {
@@ -308,32 +327,16 @@ int main(void)
 	if (sys.ntmp == 0) {
 	  BSP_LCD_DisplayStringAtLine(line, "Please attach sensors");
 	}
+	break;
+
+      default:
+	break;      
       }
-      
-      if (button_pressed) {
-	BSP_LCD_Clear(LCD_COLOR_WHITE);
-	state = TEMPMON_STATE_MONITOR;
-      }
-      break;
-      
-    case TEMPMON_STATE_IDLE:
-      if (button_pressed) {
-	state = TEMPMON_STATE_SCAN;
-	BSP_LCD_Clear(LCD_COLOR_WHITE);
-	j = 0;
-      }
-      break;
-    default:
-      break;      
     }
 
-    if (button_pressed) {
-      printf("Button processed\r\n");
-      button_pressed = 0;
-    }
-
+    // Timer tick
     HAL_Delay(2);
-    i++;
+    ticks++;
   }
   /* USER CODE END 3 */
 }
