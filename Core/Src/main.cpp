@@ -204,6 +204,7 @@ int main(void)
   uint32_t ticks = 0;
   uint32_t samples = 0;
 
+  ApplicationTypeDef Last_appli_state = APPLICATION_IDLE;
   char fname[64];
   uint32_t byteswritten;
   char *newline = "\r\n";
@@ -249,11 +250,12 @@ int main(void)
       case TEMPMON_STATE_MONITOR:
 	if (FatFS_opened()) {
 	  FatFS_close();
-	  BSP_LCD_DisplayStringAtLine(1, "TEMPMON LOG FILE");
+	  BSP_LCD_DisplayStringAtLine(1, "TEMPMON LOG FILE  ");
 	  BSP_LCD_DisplayStringAtLine(2, fname);
 	} else {
 	  BSP_LCD_DisplayStringAtLine(1, "INSERT FLASH DRIVE");
 	}
+	Last_appli_state = Appli_state;
 	state = TEMPMON_STATE_IDLE;
 	break;
       case TEMPMON_STATE_IDLE:
@@ -280,7 +282,6 @@ int main(void)
 	rtc->updateTime();
 	BSP_LCD_SPRINTF(line++, temp_buf, "%s %s",
 			rtc->stringDateUSA(), rtc->stringTime());
-	BSP_LCD_SPRINTF(line++, temp_buf, "Samples: %u", samples++);
 
 	if (!FatFS_opened()) {
 	  sprintf(fname, "TM_%04d%02d%02d_%02d%02d.TXT",
@@ -288,7 +289,11 @@ int main(void)
 		  rtc->getHours(), rtc->getMinutes());
 	  FatFS_open(fname);
 	}
+	BSP_LCD_SPRINTF(line++, temp_buf, "LOGGING: %s",
+			FatFS_opened() ? "ON " : "OFF");
 	
+	BSP_LCD_SPRINTF(line++, temp_buf, "Samples: %u", samples++);
+
 	if (FatFS_opened()) {
 	  res = f_write(&USBHFile, temp_buf, strlen(temp_buf), (void *)&byteswritten);
 	  res = f_write(&USBHFile, newline, nl, (void *)&byteswritten);
@@ -310,6 +315,20 @@ int main(void)
 	break;
 
       case TEMPMON_STATE_IDLE:
+	if (Appli_state != Last_appli_state) {
+	  BSP_LCD_Clear(LCD_COLOR_WHITE);
+	  switch (Appli_state) {
+	  case APPLICATION_READY:
+	    BSP_LCD_DisplayStringAtLine(1, "FLASH DRIVE READY");
+	    break;
+	  case APPLICATION_DISCONNECT:
+	    BSP_LCD_DisplayStringAtLine(1, "INSERT FLASH DRIVE");
+	    break;
+	  default:
+	    break;
+	  }
+	  Last_appli_state = Appli_state;
+	}
 	break;      
       
       case TEMPMON_STATE_SCAN:
