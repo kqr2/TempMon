@@ -108,6 +108,7 @@ void MX_USB_HOST_Process(void);
   sprintf(buf, fmt, __VA_ARGS__);\
   BSP_LCD_DisplayStringAtLine(line, buf);
 
+#define BSP_LCD_ClearScreen() BSP_LCD_Clear(LCD_COLOR_WHITE);
 
 /* USER CODE END 0 */
 
@@ -172,7 +173,7 @@ int main(void)
   BSP_LCD_SelectLayer(1);
 
   /* Clear the LCD */
-  BSP_LCD_Clear(LCD_COLOR_WHITE);
+  BSP_LCD_ClearScreen();
   BSP_LCD_SetColorKeying(1, LCD_COLOR_WHITE);
   BSP_LCD_SetLayerVisible(1, DISABLE);
 
@@ -185,7 +186,7 @@ int main(void)
   BSP_LCD_DisplayOn();
 
   /* Clear the LCD */
-  BSP_LCD_Clear(LCD_COLOR_WHITE);
+  BSP_LCD_ClearScreen();
 
   BSP_LCD_SetTextColor(LCD_COLOR_DARKGRAY);
   BSP_LCD_SetFont(&Font16);
@@ -244,7 +245,7 @@ int main(void)
 
     // Process next state
     if (button_pressed) {
-      BSP_LCD_Clear(LCD_COLOR_WHITE);
+      BSP_LCD_ClearScreen();
       
       switch (state) {
       case TEMPMON_STATE_MONITOR:
@@ -313,7 +314,7 @@ int main(void)
 
       case TEMPMON_STATE_IDLE:
 	if (Appli_state != Last_appli_state) {
-	  BSP_LCD_Clear(LCD_COLOR_WHITE);
+	  BSP_LCD_ClearScreen();
 	  switch (Appli_state) {
 	  case APPLICATION_READY:
 	    BSP_LCD_DisplayStringAtLine(1, "FLASH DRIVE READY");
@@ -331,7 +332,7 @@ int main(void)
       case TEMPMON_STATE_SCAN:
 	// Re-scan
 	if (sys_tmp_rescan(&sys)) {
-	  BSP_LCD_Clear(LCD_COLOR_WHITE);
+	  BSP_LCD_ClearScreen();
 	}
 	BSP_LCD_SPRINTF(line++, temp_buf, "Scanning: %u", samples++);
 	for (int k=0; k<TMP102_MAX_SENSORS; k++) {
