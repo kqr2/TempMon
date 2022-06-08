@@ -22,3 +22,7 @@ void tmp102_init(tmp102_t *tmp, uint8_t Addr) {
   tmp102_detect(tmp);
 }
 
+uint8_t tmp102_addr(tmp102_t *tmp) {
+  return tmp->addr >> 1;
+}
+

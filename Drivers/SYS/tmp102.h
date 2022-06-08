@@ -20,6 +20,7 @@ typedef struct {
 uint16_t tmp102_read_temp(tmp102_t *tmp);
 bool tmp102_detect(tmp102_t *tmp);
 void tmp102_init(tmp102_t *tmp, uint8_t Addr);
+uint8_t tmp102_addr(tmp102_t *tmp);
 
 #ifdef __cplusplus
 }

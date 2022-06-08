@@ -303,7 +303,7 @@ int main(void)
 	    temp = tmp102_read_temp(tmp);
 	    temp *= 625;
 	    BSP_LCD_SPRINTF(line++, temp_buf,
-			    "Temp 0x%02x : %u.%u", tmp->addr, temp/10000, temp % 10000);
+			    "Temp 0x%02x : %u.%u", tmp102_addr(tmp), temp/10000, temp % 10000);
 	    if (FatFS_opened()) {
 	      res = f_write(&USBHFile, temp_buf, strlen(temp_buf), (void *)&byteswritten);
 	      res = f_write(&USBHFile, newline, nl, (void *)&byteswritten);
@@ -338,7 +338,7 @@ int main(void)
 	for (int k=0; k<TMP102_MAX_SENSORS; k++) {
 	  tmp102_t *tmp = &sys.tmp[k];
 	  if (tmp->detect) {
-	    BSP_LCD_SPRINTF(line++, temp_buf, "Temp 0x%02x detected", tmp->addr);
+	    BSP_LCD_SPRINTF(line++, temp_buf, "Temp 0x%02x detected", tmp102_addr(tmp));
 	  }
 	}
 	if (sys.ntmp == 0) {
