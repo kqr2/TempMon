@@ -75,7 +75,7 @@ static int button_last = 0;					// Last button read
 static int button_debounce_cntr = BUTTON_DEBOUNCE_COUNT;	// Debounce counter
 
 typedef enum {
-    TEMPMON_STATE_IDLE,
+    TEMPMON_STATE_USB,
     TEMPMON_STATE_SCAN,
     TEMPMON_STATE_MONITOR,
 } tempmon_state_t;
@@ -200,6 +200,9 @@ int main(void)
   button_pressed = BSP_PB_GetState(BUTTON_KEY);
   button_last = button_pressed;
 
+  BSP_LED_Off(LED3); // Green LED
+  BSP_LED_Off(LED4); // Red LED
+
   sys_init(&sys);
   RV8803 *rtc = &sys.rtc;
   tempmon_state_t state = TEMPMON_STATE_MONITOR;
@@ -250,6 +253,8 @@ int main(void)
 
     // Process next state
     if (button_pressed) {
+      BSP_LED_Off(LED3);
+      BSP_LED_Off(LED4);
       BSP_LCD_ClearScreen();
       
       switch (state) {
@@ -262,9 +267,9 @@ int main(void)
 	  BSP_LCD_DisplayStringAtLine(1, "INSERT FLASH DRIVE");
 	}
 	Last_appli_state = Appli_state;
-	state = TEMPMON_STATE_IDLE;
+	state = TEMPMON_STATE_USB;
 	break;
-      case TEMPMON_STATE_IDLE:
+      case TEMPMON_STATE_USB:
 	state = TEMPMON_STATE_SCAN;
 	samples = 0;
 	break;
@@ -282,6 +287,7 @@ int main(void)
 
       switch (state) {
       case TEMPMON_STATE_MONITOR:
+	BSP_LED_Toggle(LED3);
 	rtc->updateTime();
 	BSP_LCD_SPRINTF(line++, lcd_buf, "%s %s",
 			rtc->stringDateUSA(), rtc->stringTime());
@@ -303,6 +309,7 @@ int main(void)
 	      }
 	      FatFS_writeln(usb_buf);
 	    }
+	    BSP_LED_On(LED4);
 	  }
 	}
 	BSP_LCD_SPRINTF(line++, lcd_buf, "LOGGING: %s",
@@ -332,14 +339,16 @@ int main(void)
 	}
 	break;
 
-      case TEMPMON_STATE_IDLE:
+      case TEMPMON_STATE_USB:
 	if (Appli_state != Last_appli_state) {
 	  BSP_LCD_ClearScreen();
 	  switch (Appli_state) {
 	  case APPLICATION_READY:
+	    BSP_LED_On(LED3);
 	    BSP_LCD_DisplayStringAtLine(1, "FLASH DRIVE READY");
 	    break;
 	  case APPLICATION_DISCONNECT:
+	    BSP_LED_Off(LED3);
 	    BSP_LCD_DisplayStringAtLine(1, "INSERT FLASH DRIVE");
 	    break;
 	  default:
@@ -362,7 +371,10 @@ int main(void)
 	  }
 	}
 	if (sys.ntmp == 0) {
+	  BSP_LED_Off(LED3);
 	  BSP_LCD_DisplayStringAtLine(line, "Please attach sensors");
+	} else {
+	  BSP_LED_On(LED3);
 	}
 	break;
 
