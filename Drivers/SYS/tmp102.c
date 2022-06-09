@@ -8,8 +8,16 @@ static uint16_t tmp102_readreg16(tmp102_t *tmp, uint8_t Reg) {
   return (((uint16_t)buf[0]) << 8) |  buf[1];
 }
 
-uint16_t tmp102_read_temp(tmp102_t *tmp) {
+static uint16_t tmp102_read_temp_reg(tmp102_t *tmp) {
   return tmp102_readreg16(tmp, 0) >> 4;
+}
+
+uint32_t tmp102_read_temp(tmp102_t *tmp, uint32_t *integer, uint32_t *frac) {
+  uint32_t temp = tmp102_read_temp_reg(tmp);
+  temp *= 625;
+  if (integer) *integer = temp / 10000;
+  if (frac) *frac = temp % 10000;
+  return temp;
 }
 
 bool tmp102_detect(tmp102_t *tmp) {

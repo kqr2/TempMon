@@ -17,7 +17,7 @@ typedef struct {
   bool detect;
 } tmp102_t;
 
-uint16_t tmp102_read_temp(tmp102_t *tmp);
+uint32_t tmp102_read_temp(tmp102_t *tmp, uint32_t *integer, uint32_t *frac);
 bool tmp102_detect(tmp102_t *tmp);
 void tmp102_init(tmp102_t *tmp, uint8_t Addr);
 uint8_t tmp102_addr(tmp102_t *tmp);

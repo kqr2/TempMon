@@ -90,7 +90,7 @@ void FatFS_test_routine(void)
 	}
 }
 
-void FatFS_close(void) {
+FRESULT FatFS_close(void) {
   if (USBFileOpened) {
     USBFileOpened = 0;
     
@@ -99,19 +99,20 @@ void FatFS_close(void) {
 
     if (res != FR_OK)
       {
-	return;
+	return res;
       }
 
     res = f_close(&USBHFile);
 
     if (res != FR_OK)
       {
-	return;
+	return res;
       }
   }
+  return FR_OK;
 }
 
-void FatFS_open(const char *fname)
+FRESULT FatFS_open(const char *fname)
 {
   FRESULT res;
 
@@ -121,14 +122,30 @@ void FatFS_open(const char *fname)
 
       if (res != FR_OK)
 	{
-	  return;
+	  return res;
 	}
       USBFileOpened = 1;
     }
+  return FR_OK;
 }
 
 int FatFS_opened(void) {
   return USBFileOpened;
+}
+
+uint32_t FatFS_write(char *buf) {
+  uint32_t byteswritten;
+  
+  if (f_write(&USBHFile, buf, strlen(buf), (void *)&byteswritten) != FR_OK)
+    byteswritten = 0;
+
+  return byteswritten;
+}
+
+uint32_t FatFS_writeln(char *buf) {
+  const char *newline = "\r\n";
+  uint32_t byteswritten = FatFS_write(buf);
+  byteswritten += FatFS_write(newline);
 }
 
 

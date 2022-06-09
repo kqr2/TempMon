@@ -199,18 +199,20 @@ int main(void)
   sys_init(&sys);
   RV8803 *rtc = &sys.rtc;
   tempmon_state_t state = TEMPMON_STATE_MONITOR;
-
-  uint32_t temp;
-  uint8_t temp_buf[32];
+  
   uint32_t ticks = 0;
   uint32_t samples = 0;
 
+  uint32_t temp_int;
+  uint32_t temp_frac;
+  
+  uint8_t lcd_buf[32];
+
   ApplicationTypeDef Last_appli_state = APPLICATION_IDLE;
   char fname[64];
+  uint8_t usb_buf[64];
+  int nusb_buf;
   uint32_t byteswritten;
-  char *newline = "\r\n";
-  int nl = strlen(newline);
-  FRESULT res;
 
   /* USER CODE END 2 */
 
@@ -278,37 +280,52 @@ int main(void)
       switch (state) {
       case TEMPMON_STATE_MONITOR:
 	rtc->updateTime();
-	BSP_LCD_SPRINTF(line++, temp_buf, "%s %s",
+	BSP_LCD_SPRINTF(line++, lcd_buf, "%s %s",
 			rtc->stringDateUSA(), rtc->stringTime());
 
 	if (!FatFS_opened()) {
 	  sprintf(fname, "TM_%04d%02d%02d_%02d%02d.TXT",
 		  rtc->getYear(), rtc->getMonth(), rtc->getDate(),
 		  rtc->getHours(), rtc->getMinutes());
-	  FatFS_open(fname);
+	  if (FatFS_open(fname) == FR_OK) {
+	    // CSV Header : Date, Time, Sample #, <Sensor Addresses>
+	    nusb_buf = sprintf(usb_buf, "Date,Time,Sample");
+	    if (nusb_buf > 0) {
+	      for (int k=0; k<TMP102_MAX_SENSORS; k++) {
+		tmp102_t *tmp = &sys.tmp[k];
+		if (tmp->detect) {
+		  nusb_buf += sprintf(usb_buf + nusb_buf,
+				      ",Temp_%u", tmp102_addr(tmp));
+		}
+	      }
+	      FatFS_writeln(usb_buf);
+	    }
+	  }
 	}
-	BSP_LCD_SPRINTF(line++, temp_buf, "LOGGING: %s",
+	BSP_LCD_SPRINTF(line++, lcd_buf, "LOGGING: %s",
 			FatFS_opened() ? "ON " : "OFF");
 	
-	BSP_LCD_SPRINTF(line++, temp_buf, "Samples: %u", samples++);
+	BSP_LCD_SPRINTF(line++, lcd_buf, "Samples: %u", samples++);
 
 	if (FatFS_opened()) {
-	  res = f_write(&USBHFile, temp_buf, strlen(temp_buf), (void *)&byteswritten);
-	  res = f_write(&USBHFile, newline, nl, (void *)&byteswritten);
+	  nusb_buf = sprintf(usb_buf, "%s,%s,%u",
+			     rtc->stringDateUSA(), rtc->stringTime(), samples);
 	}
-
+	
 	for (int k=0; k<TMP102_MAX_SENSORS; k++) {
 	  tmp102_t *tmp = &sys.tmp[k];
 	  if (tmp->detect) {
-	    temp = tmp102_read_temp(tmp);
-	    temp *= 625;
-	    BSP_LCD_SPRINTF(line++, temp_buf,
-			    "Temp 0x%02x : %u.%u", tmp102_addr(tmp), temp/10000, temp % 10000);
+	    tmp102_read_temp(tmp, &temp_int, &temp_frac);
+	    BSP_LCD_SPRINTF(line++, lcd_buf,
+			    "Temp 0x%02x : %u.%u", tmp102_addr(tmp), temp_int, temp_frac);
 	    if (FatFS_opened()) {
-	      res = f_write(&USBHFile, temp_buf, strlen(temp_buf), (void *)&byteswritten);
-	      res = f_write(&USBHFile, newline, nl, (void *)&byteswritten);
+	      nusb_buf += sprintf(usb_buf + nusb_buf, ",%u.%u", temp_int, temp_frac);
 	    }
 	  }
+	}
+
+	if (FatFS_opened()) {
+	  FatFS_writeln(usb_buf);
 	}
 	break;
 
@@ -334,11 +351,11 @@ int main(void)
 	if (sys_tmp_rescan(&sys)) {
 	  BSP_LCD_ClearScreen();
 	}
-	BSP_LCD_SPRINTF(line++, temp_buf, "Scanning: %u", samples++);
+	BSP_LCD_SPRINTF(line++, lcd_buf, "Scanning: %u", samples++);
 	for (int k=0; k<TMP102_MAX_SENSORS; k++) {
 	  tmp102_t *tmp = &sys.tmp[k];
 	  if (tmp->detect) {
-	    BSP_LCD_SPRINTF(line++, temp_buf, "Temp 0x%02x detected", tmp102_addr(tmp));
+	    BSP_LCD_SPRINTF(line++, lcd_buf, "Temp 0x%02x detected", tmp102_addr(tmp));
 	  }
 	}
 	if (sys.ntmp == 0) {
