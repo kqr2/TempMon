@@ -317,9 +317,9 @@ int main(void)
 	  if (tmp->detect) {
 	    tmp102_read_temp(tmp, &temp_int, &temp_frac);
 	    BSP_LCD_SPRINTF(line++, lcd_buf,
-			    "Temp 0x%02x : %u.%u", tmp102_addr(tmp), temp_int, temp_frac);
+			    "Temp 0x%02x : %u.%04u", tmp102_addr(tmp), temp_int, temp_frac);
 	    if (FatFS_opened()) {
-	      nusb_buf += sprintf(usb_buf + nusb_buf, ",%u.%u", temp_int, temp_frac);
+	      nusb_buf += sprintf(usb_buf + nusb_buf, ",%u.%04u", temp_int, temp_frac);
 	    }
 	  }
 	}
