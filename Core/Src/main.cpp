@@ -110,6 +110,38 @@ void MX_USB_HOST_Process(void);
 
 #define BSP_LCD_ClearScreen() BSP_LCD_Clear(LCD_COLOR_WHITE);
 
+#define LCD_FRAME_BUFFER_LAYER0                  (LCD_FRAME_BUFFER+0x130000)
+#define LCD_FRAME_BUFFER_LAYER1                  LCD_FRAME_BUFFER
+
+void BSP_LCD_Initialize(void) {
+  // Initialize LCD
+  BSP_LCD_Init();
+
+  /* Layer2 Init */
+  BSP_LCD_LayerDefaultInit(1, LCD_FRAME_BUFFER_LAYER1);
+  /* Set Foreground Layer */
+  BSP_LCD_SelectLayer(1);
+
+  /* Clear the LCD */
+  BSP_LCD_ClearScreen();
+  BSP_LCD_SetColorKeying(1, LCD_COLOR_WHITE);
+  BSP_LCD_SetLayerVisible(1, DISABLE);
+
+  /* Layer1 Init */
+  BSP_LCD_LayerDefaultInit(0, LCD_FRAME_BUFFER_LAYER0);
+  /* Set Foreground Layer */
+  BSP_LCD_SelectLayer(0);
+
+  /* Enable The LCD */
+  BSP_LCD_DisplayOn();
+
+  /* Clear the LCD */
+  BSP_LCD_ClearScreen();
+
+  BSP_LCD_SetTextColor(LCD_COLOR_DARKGRAY);
+  BSP_LCD_SetFont(&Font16);
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -161,35 +193,7 @@ int main(void)
   // Initialize command console
   ConsoleInit();
 
-  // Initialize LCD
-  BSP_LCD_Init();
-
-#define LCD_FRAME_BUFFER_LAYER0                  (LCD_FRAME_BUFFER+0x130000)
-#define LCD_FRAME_BUFFER_LAYER1                  LCD_FRAME_BUFFER
-
-  /* Layer2 Init */
-  BSP_LCD_LayerDefaultInit(1, LCD_FRAME_BUFFER_LAYER1);
-  /* Set Foreground Layer */
-  BSP_LCD_SelectLayer(1);
-
-  /* Clear the LCD */
-  BSP_LCD_ClearScreen();
-  BSP_LCD_SetColorKeying(1, LCD_COLOR_WHITE);
-  BSP_LCD_SetLayerVisible(1, DISABLE);
-
-  /* Layer1 Init */
-  BSP_LCD_LayerDefaultInit(0, LCD_FRAME_BUFFER_LAYER0);
-  /* Set Foreground Layer */
-  BSP_LCD_SelectLayer(0);
-
-  /* Enable The LCD */
-  BSP_LCD_DisplayOn();
-
-  /* Clear the LCD */
-  BSP_LCD_ClearScreen();
-
-  BSP_LCD_SetTextColor(LCD_COLOR_DARKGRAY);
-  BSP_LCD_SetFont(&Font16);
+  BSP_LCD_Initialize();
 
   /* Initialize user button to cause an interrupt */
   BSP_PB_Init(BUTTON_KEY, BUTTON_MODE_EXTI);
@@ -212,7 +216,6 @@ int main(void)
   char fname[64];
   uint8_t usb_buf[64];
   int nusb_buf;
-  uint32_t byteswritten;
 
   /* USER CODE END 2 */
 
