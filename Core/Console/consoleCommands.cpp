@@ -28,6 +28,7 @@ static eCommandResult_T ConsoleCommandParamExampleHexUint16(const char buffer[])
 
 static eCommandResult_T ConsoleCommandRtcTime(const char buffer[]);
 static eCommandResult_T ConsoleCommandRtcSet(const char buffer[]);
+static eCommandResult_T ConsoleCommandSysSetInterval(const char buffer[]);
 
 
 static const sConsoleCommandTable_T mConsoleCommandTable[] =
@@ -40,6 +41,7 @@ static const sConsoleCommandTable_T mConsoleCommandTable[] =
 
     {"rtc_time", &ConsoleCommandRtcTime, HELP("Get the current rtc time")},
     {"rtc_set", &ConsoleCommandRtcSet, HELP("Set the current rtc time")},
+    {"sys_set_interval", &ConsoleCommandSysSetInterval, HELP("Set the system timer interval")},
     
     CONSOLE_COMMAND_TABLE_END // must be LAST
 };
@@ -139,6 +141,19 @@ static eCommandResult_T ConsoleCommandRtcSet(const char buffer[])
     RV8803 *rtc = &sys.rtc;
     rtc->setEpoch(unix, false);
   }
+
+  return COMMAND_SUCCESS;
+}
+
+static eCommandResult_T ConsoleCommandSysSetInterval(const char buffer[])
+{
+  char cmd[20];
+  int msec;
+
+  if (sscanf(buffer, "%s %d", cmd, &msec) == 2) {
+    sys_set_timer_interval(&sys, msec);
+  }
+  printf("Sys timer interval: %d\n\r", SYS_TIMER_INTERVAL(sys));
 
   return COMMAND_SUCCESS;
 }

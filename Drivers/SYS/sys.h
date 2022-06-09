@@ -17,7 +17,10 @@ typedef struct {
   RV8803 rtc;
 } sys_t;
 
+#define SYS_TIMER_INTERVAL(sys)	(sys.timer_ticks * SYS_TIMER_TICK)
+
 void sys_init(sys_t *sys);
 bool sys_tmp_rescan(sys_t *sys);
+void sys_set_timer_interval(sys_t *sys, int msec);
 
 #endif /* __SYS__H */   
