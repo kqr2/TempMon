@@ -195,7 +195,7 @@ int main(void)
 
   BSP_LCD_Initialize();
 
-  /* Initialize user button to cause an interrupt */
+  // Initialize user button to cause an interrupt
   BSP_PB_Init(BUTTON_KEY, BUTTON_MODE_EXTI);
   button_pressed = BSP_PB_GetState(BUTTON_KEY);
   button_last = button_pressed;
@@ -203,22 +203,29 @@ int main(void)
   BSP_LED_Off(LED3); // Green LED
   BSP_LED_Off(LED4); // Red LED
 
+  // Initialize system 
   sys_init(&sys);
   RV8803 *rtc = &sys.rtc;
   tempmon_state_t state = TEMPMON_STATE_MONITOR;
-  
+
+  // Keep track of sys ticks and samples
   uint32_t ticks = 0;
   uint32_t samples = 0;
 
+  // Temperature is fixed point: <int>.<frac> in Celsius
   uint32_t temp_int;
   uint32_t temp_frac;
-  
+
+  // Buffer for each line of LCD characters
   uint8_t lcd_buf[32];
 
+  // USB state
   ApplicationTypeDef Last_appli_state = APPLICATION_IDLE;
-  char fname[64];
-  uint8_t usb_buf[64];
-  int nusb_buf;
+
+  // USB file vars
+  char fname[64];	// file name
+  uint8_t usb_buf[64];	// Buffer for each CSV
+  int nusb_buf;		// Offset in buffer
 
   /* USER CODE END 2 */
 
@@ -232,7 +239,7 @@ int main(void)
     /* USER CODE BEGIN 3 */
     ConsoleProcess();
 
-    /* Process button */
+    /* Process button : debounce */
     if (button_interrupt) {
       // read the current state of the switch into a local variable:
       int button = BSP_PB_GetState(BUTTON_KEY);
@@ -251,11 +258,12 @@ int main(void)
       }
     }
 
-    // Process next state
+    // Transition to next state if button is pressed
     if (button_pressed) {
       BSP_LED_Off(LED3);
       BSP_LED_Off(LED4);
       BSP_LCD_ClearScreen();
+      samples = 0;
       
       switch (state) {
       case TEMPMON_STATE_MONITOR:
@@ -271,23 +279,21 @@ int main(void)
 	break;
       case TEMPMON_STATE_USB:
 	state = TEMPMON_STATE_SCAN;
-	samples = 0;
 	break;
       case TEMPMON_STATE_SCAN:
 	state = TEMPMON_STATE_MONITOR;
-	samples = 0;
 	break;
       default:
 	break;
       }
     }
-    
+
+    // Process application state
     if (button_pressed || (ticks % sys.timer_ticks == 0))  {
       int line = 1;
 
       switch (state) {
       case TEMPMON_STATE_MONITOR:
-	BSP_LED_Toggle(LED3);
 	rtc->updateTime();
 	BSP_LCD_SPRINTF(line++, lcd_buf, "%s %s",
 			rtc->stringDateUSA(), rtc->stringTime());
@@ -317,25 +323,32 @@ int main(void)
 	
 	BSP_LCD_SPRINTF(line++, lcd_buf, "Samples: %u", samples++);
 
-	if (FatFS_opened()) {
-	  nusb_buf = sprintf(usb_buf, "%s,%s,%u",
-			     rtc->stringDateUSA(), rtc->stringTime(), samples);
-	}
+	if (sys.ntmp > 0) {
+	  BSP_LED_Toggle(LED3);
+	  if (FatFS_opened()) {
+	    nusb_buf = sprintf(usb_buf, "%s,%s,%u",
+			       rtc->stringDateUSA(), rtc->stringTime(), samples);
+	  }
 	
-	for (int k=0; k<TMP102_MAX_SENSORS; k++) {
-	  tmp102_t *tmp = &sys.tmp[k];
-	  if (tmp->detect) {
-	    tmp102_read_temp(tmp, &temp_int, &temp_frac);
-	    BSP_LCD_SPRINTF(line++, lcd_buf,
-			    "Temp 0x%02x : %u.%04u", tmp102_addr(tmp), temp_int, temp_frac);
-	    if (FatFS_opened()) {
-	      nusb_buf += sprintf(usb_buf + nusb_buf, ",%u.%04u", temp_int, temp_frac);
+	  for (int k=0; k<TMP102_MAX_SENSORS; k++) {
+	    tmp102_t *tmp = &sys.tmp[k];
+	    if (tmp->detect) {
+	      tmp102_read_temp(tmp, &temp_int, &temp_frac);
+	      BSP_LCD_SPRINTF(line++, lcd_buf,
+			      "Temp 0x%02x : %u.%04u", tmp102_addr(tmp), temp_int, temp_frac);
+	      if (FatFS_opened()) {
+		nusb_buf += sprintf(usb_buf + nusb_buf, ",%u.%04u", temp_int, temp_frac);
+	      }
 	    }
 	  }
-	}
 
-	if (FatFS_opened()) {
-	  FatFS_writeln(usb_buf);
+	  if (FatFS_opened()) {
+	    FatFS_writeln(usb_buf);
+	  }
+	} else {
+	  // No sensors
+	  BSP_LED_Off(LED3);
+	  BSP_LCD_DisplayStringAtLine(line, "No attached sensors");
 	}
 	break;
 
