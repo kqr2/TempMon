@@ -1,3 +1,7 @@
+This project relies on other software components which have their own
+respective licenses. Please see section "Open Source and Third Party Libraries" in
+https://github.com/kqr2/TempMon/blob/main/MES%20Temp%20Monitor%20Final%20Project%20Report.pdf
+
 This software component is provided to you as part of a software package and
 applicable license terms are in the  Package_license file. If you received this
 software component outside of a package or without applicable license terms,
